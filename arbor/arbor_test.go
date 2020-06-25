@@ -5,17 +5,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/anatollupacescu/sandbox/arbor"
+	"github.com/anatollupacescu/arbortest/arbor"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNoProvider(t *testing.T) {
 	all := []struct {
-		name         string
-		validators   map[string]string
-		dependencies map[string][]string
-		tests        map[string]func() error
-		output       string
+		name       string
+		validators map[string]string
+		tests      map[string]func() error
+		output     string
 	}{
 		{
 			name: "single failing test",
@@ -38,7 +37,7 @@ func TestNoProvider(t *testing.T) {
 
 	for _, test := range all {
 		t.Run(test.name, func(t *testing.T) {
-			res := arbor.Run(test.validators, test.dependencies, test.tests)
+			res := arbor.Run(test.validators, nil, test.tests)
 			assert.Equal(t, test.output, res.Output)
 		})
 	}

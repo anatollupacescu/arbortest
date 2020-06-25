@@ -3,28 +3,19 @@ package example
 import (
 	"testing"
 
-	"github.com/anatollupacescu/sandbox/arbor"
-	"github.com/stretchr/testify/assert"
+	"github.com/anatollupacescu/arbortest/arbor"
 )
 
 func TestArbor(t *testing.T) {
 	validators := map[string]string{
-		"testOne":     "providerOne",
-		"validateTwo": "providerTwo",
+		"testOne": "providerOne", "testTwo": "providerTwo",
 	}
-
 	dependencies := map[string][]string{
-		"testTwo": {"providerOne", "providerTwo"},
+		"testMain": {"providerOne", "providerTwo"},
 	}
-
 	tests := map[string]func() error{
-		"testOne":     testOne,
-		"validateTwo": validateTwo,
-		"testTwo":     testTwo,
+		"testOne": testOne, "testTwo": testTwo, "testMain": testMain,
 	}
-
-	res := arbor.Run(validators, dependencies, tests)
-
-	expected := `{"nodes":[{"id":"testOne","group":2,"status":"failed"}],"links":[]}`
-	assert.Equal(t, expected, res.Output)
+	r := arbor.Run(validators, dependencies, tests)
+	t.Logf("output: %v", r.Output)
 }

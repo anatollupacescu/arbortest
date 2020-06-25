@@ -25,7 +25,6 @@ type ParseResult struct {
 func Parse(src string) ParseResult {
 	fset := token.NewFileSet()
 
-	// Create the AST by parsing src.
 	f, err := parser.ParseFile(fset, "src.go", src, parser.ParseComments)
 
 	if err != nil {
