@@ -68,10 +68,10 @@ func TestInvalidProvider(t *testing.T) {
 	}
 
 	output := `{"nodes":[
-		{"id":"test1","group":1,"status":"passed"}, 
 		{"id":"provider1","group":1,"status":"passed"},
-		{"id":"test2","group":2,"status":"failed"}, 
 		{"id":"provider2","group":2,"status":"failed"},
+		{"id":"test1","group":1,"status":"passed"}, 
+		{"id":"test2","group":2,"status":"failed"}, 
 		{"id":"test3","group":0,"status":"skipped"}],
 	"links":[
 		{"source":"test1","target":"provider1","value":0}, 
@@ -114,10 +114,10 @@ func TestValidProvider(t *testing.T) {
 	}
 
 	output := `{"nodes":[
-		{"id":"test1","group":1,"status":"passed"}, 
 		{"id":"provider1","group":1,"status":"passed"},
-		{"id":"test2","group":1,"status":"passed"}, 
 		{"id":"provider2","group":1,"status":"passed"},
+		{"id":"test1","group":1,"status":"passed"}, 
+		{"id":"test2","group":1,"status":"passed"}, 
 		{"id":"test3","group":1,"status":"passed"}],
 	"links":[
 		{"source":"test1","target":"provider1","value":0}, 

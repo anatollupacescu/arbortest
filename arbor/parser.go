@@ -18,8 +18,8 @@ type (
 
 type ParseResult struct {
 	Warnings []string
+	Errors   []error
 	Tests    suite
-	Error    string
 }
 
 func Parse(src string) ParseResult {
@@ -59,20 +59,16 @@ func Parse(src string) ParseResult {
 		}
 	}
 
-	var msg string
-
-	if f, p := invalidProviders(providerList, calls); f != "" {
-		msg = fmt.Sprintf("error: '%s' calls invalid provider: '%s'", f, p)
-	}
+	var errors = invalidProviders(providerList, calls)
 
 	return ParseResult{
 		Tests:    calls,
 		Warnings: warnings,
-		Error:    msg,
+		Errors:   errors,
 	}
 }
 
-func invalidProviders(pl providers, calls suite) (f testName, p string) {
+func invalidProviders(pl providers, calls suite) (errors []error) {
 	var valid = make(map[string]bool, 0)
 
 	for _, v := range calls {
@@ -85,7 +81,8 @@ func invalidProviders(pl providers, calls suite) (f testName, p string) {
 		if len(v) > 1 {
 			for i := range v {
 				if _, ok := valid[v[i]]; !ok {
-					return f, v[i]
+					msg := fmt.Errorf("error: '%s' calls invalid provider: '%s'", f, v[i])
+					errors = append(errors, msg)
 				}
 			}
 		}

@@ -48,13 +48,13 @@ import (
 
 func TestArbor(t *testing.T) {
 	validators := map[string]string{
-		"testOne": "providerOne", "testTwo": "providerTwo", 
+		"testOne": "providerOne", "testTwo": "providerTwo",
 	}
 	dependencies := map[string][]string{
-		"testMain": {"providerOne", "providerTwo", }, 
+		"testMain": {"providerOne", "providerTwo"},
 	}
 	tests := map[string]func() error{
-		"testOne": testOne, "testTwo": testTwo, "testMain": testMain, 
+		"testMain": testMain, "testOne": testOne, "testTwo": testTwo,
 	}
 	if r := arbor.Run(validators, dependencies, tests); r.Error != "" {
 		t.Error(r.Error)

@@ -62,7 +62,7 @@ func providerOne() int {
 		})
 	})
 
-	t.Run("given a test and an invalidated provider", func(t *testing.T) {
+	t.Run("given a test and two invalidated providers", func(t *testing.T) {
 		src := `package main
 
 func testOne() error {
@@ -77,17 +77,25 @@ func providerOne() int {
 func testTwo() error {
 	_ = providerOne()
 	_ = providerTwo()
+	_ = providerThree()
 	return nil
 }
 
 func providerTwo() int {
+	return 0
+}
+
+func providerThree() int {
 	return 0
 }`
 
 		t.Run("should fail with message", func(t *testing.T) {
 			res := arbor.Parse(src)
 			assert.Len(t, res.Tests, 2)
-			assert.Equal(t, "error: 'testTwo' calls invalid provider: 'providerTwo'", res.Error)
+			if !assert.Len(t, res.Errors, 2) {
+				assert.Equal(t, "error: 'testTwo' calls invalid provider: 'providerTwo'", res.Errors[0].Error())
+				assert.Equal(t, "error: 'testTwo' calls invalid provider: 'providerThree'", res.Errors[1].Error())
+			}
 		})
 	})
 }
