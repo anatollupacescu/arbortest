@@ -36,12 +36,13 @@ func testMain() error {
 
 	pr := arbor.Parse(src)
 
-	output := arbor.GenerateSource(pr.Tests)
+	output := arbor.GenerateSource("sample", pr.Tests)
 
-	expected := `package arbor
+	expected := `package sample
 
 import (
 	"testing"
+
 	"github.com/anatollupacescu/arbortest/arbor"
 )
 
@@ -53,7 +54,7 @@ func TestArbor(t *testing.T) {
 		"testMain": {"providerOne", "providerTwo", }, 
 	}
 	tests := map[string]func() error{
-		"testMain": testMain, 
+		"testOne": testOne, "testTwo": testTwo, "testMain": testMain, 
 	}
 	if r := arbor.Run(validators, dependencies, tests); r.Error != "" {
 		t.Error(r.Error)

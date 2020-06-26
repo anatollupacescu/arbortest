@@ -13,12 +13,12 @@ type (
 	testName  string
 	providers []string
 
-	Suite map[testName]providers
+	suite map[testName]providers
 )
 
 type ParseResult struct {
 	Warnings []string
-	Tests    Suite
+	Tests    suite
 	Error    string
 }
 
@@ -31,7 +31,7 @@ func Parse(src string) ParseResult {
 		log.Fatalf("parse file: %v\n", err)
 	}
 
-	var calls = make(Suite)
+	var calls = make(suite)
 	var providerList providers
 
 	for _, decl := range f.Decls {
@@ -72,7 +72,7 @@ func Parse(src string) ParseResult {
 	}
 }
 
-func invalidProviders(pl providers, calls Suite) (f testName, p string) {
+func invalidProviders(pl providers, calls suite) (f testName, p string) {
 	var valid = make(map[string]bool, 0)
 
 	for _, v := range calls {
@@ -94,7 +94,7 @@ func invalidProviders(pl providers, calls Suite) (f testName, p string) {
 	return
 }
 
-func getUnusedProviders(pl providers, calls Suite) providers {
+func getUnusedProviders(pl providers, calls suite) providers {
 	var all providers
 
 	for _, v := range calls {

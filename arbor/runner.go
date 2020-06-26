@@ -20,6 +20,7 @@ type test struct {
 
 type testResult struct {
 	Output string
+	Error  string
 }
 
 func Run(validators map[string]string, dependencies map[string][]string, tests map[string]func() error) testResult {
@@ -100,7 +101,18 @@ func Run(validators map[string]string, dependencies map[string][]string, tests m
 
 	return testResult{
 		Output: marshall(nodes, links),
+		Error:  nodesError(nodes),
 	}
+}
+
+func nodesError(tests []test) string {
+	for _, t := range tests {
+		if t.status == failed {
+			return t.errMsg
+		}
+	}
+
+	return ""
 }
 
 func allDepsAreValid(deps, all []string) bool {
