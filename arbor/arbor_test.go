@@ -37,7 +37,7 @@ func TestArbor(t *testing.T) {
 		})
 
 		t.Run("errors", func(t *testing.T) {
-			errors := arbor.Generate(&emptyDir, nil)
+			errors := arbor.Generate(&emptyDir, nil, "test")
 			if assert.Len(t, errors, 1) {
 				expected := arbor.ErrNoTestFilesFound
 				assert.Equal(t, expected, errors[0])
@@ -52,7 +52,7 @@ func TestArbor(t *testing.T) {
 		var outFile = &TestOutFile{}
 
 		t.Run("errors", func(t *testing.T) {
-			errors := arbor.Generate(&emptyDir, outFile)
+			errors := arbor.Generate(&emptyDir, outFile, "ignored")
 			if assert.Len(t, errors, 1) {
 				expected := arbor.ErrNoTestsDeclared
 				assert.Equal(t, expected, errors[0])
@@ -61,7 +61,7 @@ func TestArbor(t *testing.T) {
 		})
 	})
 	t.Run("given a file with one test", func(t *testing.T) {
-		var src = `package main
+		var src = `package testing
 
 func testOne() error {
 	return nil
@@ -75,15 +75,15 @@ func testOne() error {
 		var outFile = &TestOutFile{}
 
 		t.Run("registers one test", func(t *testing.T) {
-			errors := arbor.Generate(&emptyDir, outFile)
+			errors := arbor.Generate(&emptyDir, outFile, "testing")
 			assert.Len(t, errors, 0)
 
-			expected := `package main
+			expected := `package testing
 
 import (
 	"testing"
 
-	"github.com/anatollupacescu/arbortest/arbor"
+	"github.com/anatollupacescu/arbortest/runner"
 )
 
 func TestArbor(t *testing.T) {
@@ -94,7 +94,7 @@ func TestArbor(t *testing.T) {
 	tests := map[string]func() error{
 		"testOne": testOne,
 	}
-	if r := arbor.Run(validators, dependencies, tests); r.Error != "" {
+	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
 		t.Error(r.Error)
 	}
 }
@@ -104,7 +104,7 @@ func TestArbor(t *testing.T) {
 	})
 
 	t.Run("given a test and a related provider", func(t *testing.T) {
-		var src = `package main
+		var src = `package sample
 
 func testOne() error {
 	_ = providerOne()
@@ -124,15 +124,15 @@ func providerOne() int {
 		)
 
 		t.Run("should register test", func(t *testing.T) {
-			errors := arbor.Generate(&singleFileDir, outFile)
+			errors := arbor.Generate(&singleFileDir, outFile, "sample")
 			assert.Len(t, errors, 0)
 
-			expected := `package main
+			expected := `package sample
 
 import (
 	"testing"
 
-	"github.com/anatollupacescu/arbortest/arbor"
+	"github.com/anatollupacescu/arbortest/runner"
 )
 
 func TestArbor(t *testing.T) {
@@ -141,7 +141,7 @@ func TestArbor(t *testing.T) {
 	tests := map[string]func() error{
 		"testOne": testOne,
 	}
-	if r := arbor.Run(validators, dependencies, tests); r.Error != "" {
+	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
 		t.Error(r.Error)
 	}
 }
@@ -151,7 +151,7 @@ func TestArbor(t *testing.T) {
 	})
 
 	t.Run("given a test and two invalidated providers", func(t *testing.T) {
-		var src = `package main
+		var src = `package random
 
 func testOne() error {
 	_ = providerOne()
@@ -186,7 +186,7 @@ func providerThree() int {
 		)
 
 		t.Run("returns two errors", func(t *testing.T) {
-			errors := arbor.Generate(&singleFileDir, outFile)
+			errors := arbor.Generate(&singleFileDir, outFile, "random")
 			if assert.Len(t, errors, 2) {
 				sort.Slice(errors, func(i, j int) bool {
 					return errors[i].Error() < errors[j].Error()
@@ -237,14 +237,14 @@ func testMain() error {
 		)
 
 		t.Run("correct file is generated", func(t *testing.T) {
-			errors := arbor.Generate(&singleFileDir, outFile)
+			errors := arbor.Generate(&singleFileDir, outFile, "main")
 			assert.Len(t, errors, 0)
 			expected := `package main
 
 import (
 	"testing"
 
-	"github.com/anatollupacescu/arbortest/arbor"
+	"github.com/anatollupacescu/arbortest/runner"
 )
 
 func TestArbor(t *testing.T) {
@@ -257,7 +257,7 @@ func TestArbor(t *testing.T) {
 	tests := map[string]func() error{
 		"testMain": testMain, "testOne": testOne, "testTwo": testTwo,
 	}
-	if r := arbor.Run(validators, dependencies, tests); r.Error != "" {
+	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
 		t.Error(r.Error)
 	}
 }
@@ -305,14 +305,14 @@ func testMain() error {
 		)
 
 		t.Run("it parses both as one", func(t *testing.T) {
-			errors := arbor.Generate(&singleFileDir, outFile)
+			errors := arbor.Generate(&singleFileDir, outFile, "main")
 			assert.Len(t, errors, 0)
 			expected := `package main
 
 import (
 	"testing"
 
-	"github.com/anatollupacescu/arbortest/arbor"
+	"github.com/anatollupacescu/arbortest/runner"
 )
 
 func TestArbor(t *testing.T) {
@@ -325,7 +325,7 @@ func TestArbor(t *testing.T) {
 	tests := map[string]func() error{
 		"testMain": testMain, "testOne": testOne, "testTwo": testTwo,
 	}
-	if r := arbor.Run(validators, dependencies, tests); r.Error != "" {
+	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
 		t.Error(r.Error)
 	}
 }

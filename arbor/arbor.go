@@ -24,7 +24,7 @@ type (
 var ErrNoTestFilesFound = fmt.Errorf("no test files found")
 
 // Generate takes a folder and produces a file capable of running the tests in that location.
-func Generate(dir Dir, out OutFile) []error {
+func Generate(dir Dir, out OutFile, pkg string) []error {
 	var testFiles = dir.ListTestFiles()
 	if len(testFiles) == 0 {
 		return []error{ErrNoTestFilesFound}
@@ -36,7 +36,7 @@ func Generate(dir Dir, out OutFile) []error {
 		return errs
 	}
 
-	output := generateSource("main", callSuite)
+	output := generateSource(pkg, callSuite)
 	if err := out.WriteContents(output); err != nil {
 		return []error{err}
 	}

@@ -19,6 +19,7 @@ func init() {
 //nolint:gochecknoglobals	//idiomatic way of working with flags in Go
 var (
 	path = flag.String("dir", "./", "the path to the folder containing tests")
+	pkg  = flag.String("pkg", "main", "target package name")
 	name = flag.String("filename", "generated_test.go", "full generated file name")
 )
 
@@ -28,7 +29,7 @@ func main() {
 	fsDir := FsDir(*path)
 	outFile := FsOutFile(*name)
 
-	err := arbor.Generate(&fsDir, &outFile)
+	err := arbor.Generate(&fsDir, &outFile, *pkg)
 	for _, e := range err {
 		log.Printf("error: %s", e)
 	}
