@@ -1,4 +1,4 @@
-package arbor
+package runner
 
 import (
 	"encoding/json"
@@ -19,10 +19,8 @@ type outLink struct {
 }
 
 func marshall(tests []test, lnks []link) string {
-	var (
-		nodes []outNode
-		links []outLink
-	)
+	nodes := make([]outNode, 0, len(tests))
+	links := make([]outLink, 0, len(tests))
 
 	if tests == nil {
 		nodes = make([]outNode, 0)
@@ -32,14 +30,17 @@ func marshall(tests []test, lnks []link) string {
 		links = make([]outLink, 0)
 	}
 
-	for _, t := range tests {
+	for i := range tests {
 		var status = "skipped"
+
+		t := tests[i]
 		switch t.status {
 		case failed:
 			status = "failed"
 		case passed:
 			status = "passed"
 		}
+
 		nodes = append(nodes, outNode{
 			ID:     t.name,
 			Group:  int(t.status),
@@ -47,7 +48,9 @@ func marshall(tests []test, lnks []link) string {
 		})
 	}
 
-	for _, l := range lnks {
+	for i := range lnks {
+		l := lnks[i]
+
 		links = append(links, outLink{
 			Source: l.source,
 			Target: l.target,

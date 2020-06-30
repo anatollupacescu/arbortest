@@ -1,2 +1,2 @@
 # arbortest
-Graph like testing library
+chain your tests in a graph like manner

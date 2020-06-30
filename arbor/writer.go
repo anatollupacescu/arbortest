@@ -6,33 +6,33 @@ import (
 	"strings"
 )
 
-var main = `package %s
+const main = `package %s
 
 import (
 	"testing"
 
-	"github.com/anatollupacescu/arbortest/arbor"
+	"github.com/anatollupacescu/arbortest/runner"
 )
 
 func TestArbor(t *testing.T) {
 	%s
 	%s
 	%s
-	if r := arbor.Run(validators, dependencies, tests); r.Error != "" {
+	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
 		t.Error(r.Error)
 	}
 }
 `
 
-var validatorSrc = `validators := map[string]string{
+const validatorSrc = `validators := map[string]string{
 		%s,
 	}`
 
-var testsSrc = `tests := map[string]func() error{
+const testsSrc = `tests := map[string]func() error{
 		%s,
 	}`
 
-var dependenciesSrc = `dependencies := map[string][]string{
+const dependenciesSrc = `dependencies := map[string][]string{
 		%s,
 	}`
 
@@ -50,11 +50,11 @@ type dependency struct {
 }
 
 func (d dependency) String() string {
-	var providers []string
+	var providers []string = make([]string, len(d.providers))
 
 	for i := range d.providers {
 		str := fmt.Sprintf("\"%s\"", d.providers[i])
-		providers = append(providers, str)
+		providers[i] = str
 	}
 
 	sort.Slice(providers, func(i, j int) bool {
@@ -66,24 +66,25 @@ func (d dependency) String() string {
 	return fmt.Sprintf("\"%s\": {%s}", d.testName, commaSep)
 }
 
-func GenerateSource(pkg string, s suite) string {
+func generateSource(pkg string, calls map[string][]string) string {
 	var (
 		validatorList  []string
 		dependencyList []string
-		testList       []string
 	)
 
-	for testName, providers := range s {
+	testList := make([]string, 0, len(calls))
+
+	for testName, providers := range calls {
 		if len(providers) == 1 {
 			vr := validator{
-				testName: string(testName),
+				testName: testName,
 				provider: providers[0],
 			}
 			validatorList = append(validatorList, vr.String())
 		} else {
 			dep := dependency{
-				testName:  string(testName),
-				providers: []string(providers),
+				testName:  testName,
+				providers: providers,
 			}
 			dependencyList = append(dependencyList, dep.String())
 		}
@@ -102,9 +103,22 @@ func GenerateSource(pkg string, s suite) string {
 		return dependencyList[i] < dependencyList[j]
 	})
 
-	vals := fmt.Sprintf(validatorSrc, strings.Join(validatorList, ", "))
-	tests := fmt.Sprintf(testsSrc, strings.Join(testList, ", "))
-	deps := fmt.Sprintf(dependenciesSrc, strings.Join(dependencyList, ", "))
+	var vals, tests, deps string
+
+	if len(validatorList) > 0 {
+		vals = fmt.Sprintf(validatorSrc, strings.Join(validatorList, ", "))
+	} else {
+		vals = "var validators map[string]string"
+	}
+
+	if len(dependencyList) > 0 {
+		deps = fmt.Sprintf(dependenciesSrc, strings.Join(dependencyList, ", "))
+	} else {
+		deps = "var dependencies map[string][]string"
+		vals = "var validators map[string]string"
+	}
+
+	tests = fmt.Sprintf(testsSrc, strings.Join(testList, ", "))
 
 	return fmt.Sprintf(main, pkg, vals, deps, tests)
 }
