@@ -8,10 +8,8 @@ import (
 const generatedFileName = "generated_test.go"
 
 func TestSmoke(t *testing.T) {
-
 	cmd := exec.Command("bash", "-c", "go run . -pkg=main_test")
 	if out, err := cmd.Output(); err != nil {
-		t.Log(out)
 		t.Errorf("go run: %s", err)
 		return
 	}
@@ -38,4 +36,16 @@ func testOne() error {
 
 func providerOne() int {
 	return 0
+}
+
+func TestIntegrationListTestFiles(t *testing.T) {
+	t.Skip() //TODO implementation pending
+}
+
+func TestIntegrationReadContents(t *testing.T) {
+	t.Skip() //TODO implementation pending
+}
+
+func TestIntegrationWriteContents(t *testing.T) {
+	t.Skip() //TODO implementation pending
 }

@@ -1,4 +1,4 @@
-package main
+package example
 
 func testOne() error {
 	_ = providerOne()

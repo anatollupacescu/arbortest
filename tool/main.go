@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -18,7 +19,7 @@ func init() {
 
 //nolint:gochecknoglobals	//idiomatic way of working with flags in Go
 var (
-	path = flag.String("dir", "./", "the path to the folder containing tests")
+	dir  = flag.String("dir", "./", "the path to the folder containing tests")
 	pkg  = flag.String("pkg", "main", "target package name")
 	name = flag.String("filename", "generated_test.go", "full generated file name")
 )
@@ -26,8 +27,8 @@ var (
 func main() {
 	flag.Parse()
 
-	fsDir := FsDir(*path)
-	outFile := FsOutFile(*name)
+	fsDir := FsDir(*dir)
+	outFile := FsOutFile{name: *name, location: *dir}
 
 	err := arbor.Generate(&fsDir, &outFile, *pkg)
 	for _, e := range err {
@@ -51,7 +52,8 @@ func (d *FsDir) ListTestFiles() (out []arbor.File) {
 
 	for _, f := range files {
 		if !f.IsDir() && strings.HasSuffix(f.Name(), "_test.go") {
-			fsFile := FsFile(f.Name())
+			fullyQualified := path.Join(string(*d), f.Name())
+			fsFile := FsFile(fullyQualified)
 			out = append(out, &fsFile)
 		}
 	}
@@ -75,13 +77,15 @@ func (f *FsFile) ReadContents() string {
 }
 
 // FsOutFile represents an output file.
-type FsOutFile string
+type FsOutFile struct {
+	name, location string
+}
 
 // WriteContents ioutil based implementation for writing contents to disk.
 func (f *FsOutFile) WriteContents(contents string) error {
-	name := string(*f)
-	if err := ioutil.WriteFile(name, []byte(contents), 0600); err != nil {
-		return fmt.Errorf("generate test file %q: %w", name, err)
+	destination := path.Join(f.location, f.name)
+	if err := ioutil.WriteFile(destination, []byte(contents), 0600); err != nil {
+		return fmt.Errorf("generate test file %q: %w", f.name, err)
 	}
 
 	return nil
