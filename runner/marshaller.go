@@ -36,14 +36,14 @@ func marshall(tests []test, lnks []link) string {
 		t := tests[i]
 		switch t.status {
 		case failed:
-			status = "failed"
+			status = "failed" //TODO add String() method to 'status' type
 		case passed:
 			status = "passed"
 		}
 
 		nodes = append(nodes, outNode{
 			ID:     t.name,
-			Group:  int(t.status),
+			Group:  int(t.status), //TODO separate test from validators (shades of green)
 			Status: status,
 		})
 	}
@@ -54,7 +54,7 @@ func marshall(tests []test, lnks []link) string {
 		links = append(links, outLink{
 			Source: l.source,
 			Target: l.target,
-			Value:  0,
+			Value:  3, //TODO make configurable
 		})
 	}
 
@@ -67,7 +67,6 @@ func marshall(tests []test, lnks []link) string {
 	}
 
 	str, err := json.Marshal(output)
-
 	if err != nil {
 		log.Fatalf("marshal output: %s", err)
 	}

@@ -10,4 +10,4 @@ run command
 
 then
 
-> go test -v ./example/...
+> go test -v ./example/... -args --uri=<http://localhost:3000/data.json>

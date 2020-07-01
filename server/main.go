@@ -81,7 +81,7 @@ var index = `<!DOCTYPE html>
     width = +svg.attr("width"),
     height = +svg.attr("height");
 
-  var color = ['gray', 'red', 'green'];
+  var color = ['gray', 'green', 'red'];
 
   var simulation = d3
     .forceSimulation()

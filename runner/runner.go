@@ -1,5 +1,7 @@
 package runner
 
+import "sort"
+
 type status int
 
 const (
@@ -20,8 +22,7 @@ type test struct {
 
 // Result holds the serialized output of the successful run or the reason of failure.
 type Result struct {
-	Output string
-	Error  string
+	Output, Error string
 }
 
 type (
@@ -82,18 +83,13 @@ func validateProviders(v validators, t tests) ([]test, []link, []string) {
 		uniqProviders[p] = append(uniqProviders[p], v)
 	}
 
-	orderedByName := make([]string, 0, len(uniqProviders))
-	for providerFunctionName := range uniqProviders {
-		orderedByName = append(orderedByName, providerFunctionName)
-	}
-
 	validProviders := make([]string, 0, len(uniqProviders))
-
-	for _, providerFunctionName := range orderedByName {
-		validatorList := uniqProviders[providerFunctionName]
-
+	for providerFunctionName, validatorList := range uniqProviders {
 		var hasFailed bool
 
+		sort.Slice(validatorList, func(i, j int) bool {
+			return validatorList[i] < validatorList[j]
+		})
 		for _, validationTestName := range validatorList {
 			links = append(links, link{
 				source: validationTestName,
@@ -167,7 +163,3 @@ func allDepsAreValid(deps, all []string) bool {
 
 	return true
 }
-
-// func upload(s interface{}) string {
-// 	return "uploaded"
-// }

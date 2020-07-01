@@ -74,10 +74,10 @@ func TestInvalidProvider(t *testing.T) {
 		{"id":"test2","group":2,"status":"failed"}, 
 		{"id":"test3","group":0,"status":"skipped"}],
 	"links":[
-		{"source":"test1","target":"provider1","value":0}, 
-		{"source":"test2","target":"provider2","value":0},
-		{"source":"test3","target":"provider1","value":0},
-		{"source":"test3","target":"provider2","value":0}]}`
+		{"source":"test1","target":"provider1","value":3}, 
+		{"source":"test2","target":"provider2","value":3},
+		{"source":"test3","target":"provider1","value":3},
+		{"source":"test3","target":"provider2","value":3}]}`
 
 	res := runner.Run(validators, dependencies, tests)
 
@@ -120,10 +120,10 @@ func TestValidProvider(t *testing.T) {
 		{"id":"test2","group":1,"status":"passed"}, 
 		{"id":"test3","group":1,"status":"passed"}],
 	"links":[
-		{"source":"test1","target":"provider1","value":0}, 
-		{"source":"test2","target":"provider2","value":0},
-		{"source":"test3","target":"provider1","value":0},
-		{"source":"test3","target":"provider2","value":0}]}`
+		{"source":"test1","target":"provider1","value":3}, 
+		{"source":"test2","target":"provider2","value":3},
+		{"source":"test3","target":"provider1","value":3},
+		{"source":"test3","target":"provider2","value":3}]}`
 
 	res := runner.Run(validators, dependencies, tests)
 
@@ -180,12 +180,12 @@ func TestMultipleValidators(t *testing.T) {
 		{"id":"test4","group":1,"status":"passed"},
 		{"id":"test5","group":1,"status":"passed"}],
 	"links":[
-		{"source":"test1","target":"provider1","value":0}, 
-		{"source":"test2","target":"provider1","value":0},
-		{"source":"test3","target":"provider1","value":0},
-		{"source":"test4","target":"provider2","value":0},
-		{"source":"test5","target":"provider1","value":0},
-		{"source":"test5","target":"provider2","value":0}]}`
+		{"source":"test1","target":"provider1","value":3}, 
+		{"source":"test2","target":"provider1","value":3},
+		{"source":"test3","target":"provider1","value":3},
+		{"source":"test4","target":"provider2","value":3},
+		{"source":"test5","target":"provider1","value":3},
+		{"source":"test5","target":"provider2","value":3}]}`
 
 	res := runner.Run(validators, dependencies, tests)
 
@@ -242,12 +242,12 @@ func TestSkipValidators(t *testing.T) {
 		{"id":"test4","group":1,"status":"passed"},
 		{"id":"test5","group":0,"status":"skipped"}],
 	"links":[
-		{"source":"test1","target":"provider1","value":0}, 
-		{"source":"test2","target":"provider1","value":0},
-		{"source":"test3","target":"provider1","value":0},
-		{"source":"test4","target":"provider2","value":0},
-		{"source":"test5","target":"provider1","value":0},
-		{"source":"test5","target":"provider2","value":0}]}`
+		{"source":"test1","target":"provider1","value":3}, 
+		{"source":"test2","target":"provider1","value":3},
+		{"source":"test3","target":"provider1","value":3},
+		{"source":"test4","target":"provider2","value":3},
+		{"source":"test5","target":"provider1","value":3},
+		{"source":"test5","target":"provider2","value":3}]}`
 
 	res := runner.Run(validators, dependencies, tests)
 

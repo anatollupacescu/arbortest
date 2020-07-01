@@ -18,9 +18,15 @@ func TestArbor(t *testing.T) {
 	%s
 	%s
 	%s
-	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
+
+	r := runner.Run(validators, dependencies, tests)
+
+	if r.Error != "" {
 		t.Error(r.Error)
+		return
 	}
+
+	runner.Upload(r.Output)
 }
 `
 

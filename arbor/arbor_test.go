@@ -94,9 +94,15 @@ func TestArbor(t *testing.T) {
 	tests := map[string]func() error{
 		"testOne": testOne,
 	}
-	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
+
+	r := runner.Run(validators, dependencies, tests)
+
+	if r.Error != "" {
 		t.Error(r.Error)
+		return
 	}
+
+	runner.Upload(r.Output)
 }
 `
 			assert.Equal(t, expected, outFile.contents)
@@ -141,9 +147,15 @@ func TestArbor(t *testing.T) {
 	tests := map[string]func() error{
 		"testOne": testOne,
 	}
-	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
+
+	r := runner.Run(validators, dependencies, tests)
+
+	if r.Error != "" {
 		t.Error(r.Error)
+		return
 	}
+
+	runner.Upload(r.Output)
 }
 `
 			assert.Equal(t, expected, outFile.contents)
@@ -257,9 +269,15 @@ func TestArbor(t *testing.T) {
 	tests := map[string]func() error{
 		"testMain": testMain, "testOne": testOne, "testTwo": testTwo,
 	}
-	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
+
+	r := runner.Run(validators, dependencies, tests)
+
+	if r.Error != "" {
 		t.Error(r.Error)
+		return
 	}
+
+	runner.Upload(r.Output)
 }
 `
 			assert.Equal(t, expected, outFile.contents)
@@ -325,9 +343,15 @@ func TestArbor(t *testing.T) {
 	tests := map[string]func() error{
 		"testMain": testMain, "testOne": testOne, "testTwo": testTwo,
 	}
-	if r := runner.Run(validators, dependencies, tests); r.Error != "" {
+
+	r := runner.Run(validators, dependencies, tests)
+
+	if r.Error != "" {
 		t.Error(r.Error)
+		return
 	}
+
+	runner.Upload(r.Output)
 }
 `
 			assert.Equal(t, expected, outFile.contents)
