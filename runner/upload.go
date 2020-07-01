@@ -8,9 +8,10 @@ import (
 	"strings"
 )
 
+//nolint:gochecknoglobals	//idiomatic way of working with flags in Go
 var uri = flag.String("uri", "", "arbor server url")
 
-// Upload sends the graph json to the UI server
+// Upload sends the graph json to the UI server.
 func Upload(data string) {
 	flag.Parse()
 
@@ -30,6 +31,10 @@ func Upload(data string) {
 		log.Fatalf("build upload request: %s", err)
 	}
 
+	defer func() {
+		_ = req.Body.Close()
+	}()
+
 	hc := http.Client{}
 
 	r, err := hc.Do(req)
@@ -37,7 +42,11 @@ func Upload(data string) {
 		log.Fatalf("execute upload: %s", err)
 	}
 
-	if r.StatusCode != 200 {
+	defer func() {
+		_ = r.Body.Close()
+	}()
+
+	if r.StatusCode != http.StatusOK {
 		log.Fatalf("bad response status: %s", r.Status)
 		return
 	}

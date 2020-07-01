@@ -316,7 +316,8 @@ issues:
   # it can be disabled by `exclude-use-default: false`. To list all
   # excluded by default patterns execute `golangci-lint run --help`
   exclude:
-    - abcdef
+    # https://github.com/kyoh86/scopelint/issues/4
+    # - Using the variable on range scope .* in function literal
 
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:

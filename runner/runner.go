@@ -84,12 +84,15 @@ func validateProviders(v validators, t tests) ([]test, []link, []string) {
 	}
 
 	validProviders := make([]string, 0, len(uniqProviders))
+
 	for providerFunctionName, validatorList := range uniqProviders {
 		var hasFailed bool
 
+		validatorList := validatorList
 		sort.Slice(validatorList, func(i, j int) bool {
 			return validatorList[i] < validatorList[j]
 		})
+
 		for _, validationTestName := range validatorList {
 			links = append(links, link{
 				source: validationTestName,

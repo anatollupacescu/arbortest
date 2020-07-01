@@ -18,6 +18,8 @@ type outLink struct {
 	Value  int    `json:"value"`
 }
 
+const defaultLinkLineThickness = 3
+
 func marshall(tests []test, lnks []link) string {
 	nodes := make([]outNode, 0, len(tests))
 	links := make([]outLink, 0, len(tests))
@@ -54,7 +56,7 @@ func marshall(tests []test, lnks []link) string {
 		links = append(links, outLink{
 			Source: l.source,
 			Target: l.target,
-			Value:  3, //TODO make configurable
+			Value:  defaultLinkLineThickness, //TODO make configurable
 		})
 	}
 
