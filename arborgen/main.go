@@ -31,12 +31,8 @@ func main() {
 	outFile := FsOutFile{name: *name, location: *dir}
 
 	err := arbor.Generate(&fsDir, &outFile, *pkg)
-	for _, e := range err {
-		log.Printf("error: %s", e)
-	}
-
 	if err != nil {
-		log.Fatalf("\u274C%d error(s) found, aborting ", len(err))
+		log.Fatalf("\u274C run failed: %v ", err)
 	}
 }
 

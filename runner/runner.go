@@ -1,168 +1,104 @@
 package runner
 
-import "sort"
+import "testing"
 
 type status int
 
 const (
-	skipped status = iota
-	passed
-	failed
+	pending = status(iota)
+	fail
+	pass
 )
 
-type link struct {
-	source, target string
-}
-
 type test struct {
-	name   string
-	status status
-	errMsg string
-}
-
-// Result holds the serialized output of the successful run or the reason of failure.
-type Result struct {
-	Output, Error string
+	name    string
+	deps    []*test
+	runFunc func(t *testing.T)
+	status  status
 }
 
 type (
-	validators   map[string]string
 	dependencies map[string][]string
-	tests        map[string]func() error
+	tests        map[string]func(t *testing.T)
 )
 
-// Run takes a collection of validators, dependencies and tests and runs them in a prioritized order.
-func Run(v validators, d dependencies, t tests) Result {
-	nodes, links, validProviders := validateProviders(v, t)
+// Run entry point.
+func Run(t *testing.T, d dependencies, tt tests) string {
+	newTests := make([]*test, 0, len(tt))
 
-	//execution
-	for name, fun := range t {
-		if _, isProvider := v[name]; isProvider {
+	for name, testFunc := range tt {
+		providers := d[name]
+		if len(providers) == 1 {
 			continue
 		}
 
-		dependsOn := d[name]
-
-		for _, dep := range dependsOn {
-			links = append(links, link{
-				source: name,
-				target: dep,
-			})
-		}
-
-		node := test{
-			name:   name,
-			status: passed,
-		}
-
-		canBeRun := allDepsAreValid(dependsOn, validProviders)
-
-		if !canBeRun {
-			node.status = skipped
-			node.errMsg = "failed dependency"
-		} else if err := fun(); err != nil {
-			node.status = failed
-			node.errMsg = err.Error()
-		}
-
-		nodes = append(nodes, node)
-	}
-
-	return Result{
-		Output: marshall(nodes, links),
-		Error:  nodesError(nodes),
-	}
-}
-
-func validateProviders(v validators, t tests) ([]test, []link, []string) {
-	nodes := make([]test, 0, len(t))
-	links := make([]link, 0, len(t))
-
-	uniqProviders := make(map[string][]string)
-	for v, p := range v {
-		uniqProviders[p] = append(uniqProviders[p], v)
-	}
-
-	validProviders := make([]string, 0, len(uniqProviders))
-
-	for providerFunctionName, validatorList := range uniqProviders {
-		var hasFailed bool
-
-		validatorList := validatorList
-		sort.Slice(validatorList, func(i, j int) bool {
-			return validatorList[i] < validatorList[j]
-		})
-
-		for _, validationTestName := range validatorList {
-			links = append(links, link{
-				source: validationTestName,
-				target: providerFunctionName,
-			})
-
-			node := test{
-				name:   validationTestName,
-				status: skipped,
-			}
-
-			if !hasFailed {
-				fun := t[validationTestName]
-				if err := fun(); err != nil {
-					node.status = failed
-					node.errMsg = err.Error()
-					hasFailed = true
-				} else {
-					node.status = passed
-				}
-			}
-
-			nodes = append(nodes, node)
-		}
-
-		providerStatus := failed
-
-		if !hasFailed {
-			validProviders = append(validProviders, providerFunctionName)
-			providerStatus = passed
-		}
-
-		nodes = append(nodes, test{
-			name:   providerFunctionName,
-			status: providerStatus,
+		newTests = append(newTests, &test{
+			name:    name,
+			runFunc: testFunc,
+			deps:    computeDeps(providers, d, tt),
 		})
 	}
 
-	return nodes, links, validProviders
+	for _, v := range newTests {
+		v := v
+		t.Run(v.name, func(t2 *testing.T) {
+			v.run(t2)
+		})
+	}
+
+	return marshal(newTests...)
 }
 
-func nodesError(tests []test) string {
-	for i := range tests {
-		t := tests[i]
-		if t.status == failed {
-			return t.errMsg
+func computeDeps(providers []string, d dependencies, t tests) []*test {
+	out := make([]*test, 0)
+
+	for _, givenProvider := range providers {
+		for testName, testProviders := range d {
+			if len(testProviders) != 1 {
+				continue
+			}
+
+			if testProviders[0] == givenProvider {
+				out = append(out, &test{
+					name:    testName,
+					runFunc: t[testName],
+				})
+			}
 		}
 	}
 
-	return ""
+	return out
 }
 
-func allDepsAreValid(deps, all []string) bool {
-	if len(all) < len(deps) {
+func (ts *test) run(t *testing.T) {
+	if hasFailingDependencies(ts.deps, t) {
+		return
+	}
+
+	ts.runFunc(t)
+}
+
+func hasFailingDependencies(deps []*test, t *testing.T) bool {
+	if len(deps) == 0 {
 		return false
 	}
 
 	for _, dep := range deps {
-		var found bool
+		switch dep.status {
+		case pass:
+			continue
+		case fail:
+			return true
+		case pending:
+			dep.run(t)
 
-		for _, vDep := range all {
-			if dep == vDep {
-				found = true
+			if t.Failed() {
+				return true
 			}
-		}
-
-		if !found {
+		default:
 			return false
 		}
 	}
 
-	return true
+	return false
 }

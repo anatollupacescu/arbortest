@@ -1,16 +1,18 @@
 package example
 
-func testTwo() error {
+import (
+	"testing"
+)
+
+func testTwo(t *testing.T) {
 	_ = providerTwo()
-	return nil
 }
 
 func providerTwo() int {
 	return 0
 }
 
-func testMain() error {
+func testMain(t *testing.T) {
 	_ = providerOne()
 	_ = providerTwo()
-	return nil
 }

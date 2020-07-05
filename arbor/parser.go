@@ -8,10 +8,7 @@ import (
 	"strings"
 )
 
-type suite struct {
-	calls     map[string][]string
-	providers []string
-}
+type suite map[string][]string
 
 func parseSource(src string) suite {
 	fset := token.NewFileSet()
@@ -22,31 +19,44 @@ func parseSource(src string) suite {
 		log.Fatalf("parse file: %v\n", err)
 	}
 
-	var (
-		calls     = make(map[string][]string)
-		providers []string
-	)
+	calls := make(map[string][]string)
 
 	for _, decl := range f.Decls {
-		if gen, ok := decl.(*ast.FuncDecl); ok {
-			test := gen.Name
-
-			if strings.HasPrefix(test.Name, "provider") {
-				providers = append(providers, test.Name)
-				continue
-			}
-
-			if strings.HasPrefix(test.Name, "test") {
-				pc := providerCalls(gen)
-				calls[test.Name] = pc
-			}
+		if gen, ok := decl.(*ast.FuncDecl); ok && hasTestSignature(gen) {
+			test := gen.Name.Name
+			calls[test] = providerCalls(gen)
 		}
 	}
 
-	return suite{
-		calls:     calls,
-		providers: providers,
+	return suite(calls)
+}
+
+func hasTestSignature(gen *ast.FuncDecl) bool {
+	if !strings.HasPrefix(gen.Name.Name, "test") {
+		return false
 	}
+
+	if gen.Type.Results.NumFields() > 0 {
+		return false
+	}
+
+	params := gen.Type.Params
+	if params.NumFields() != 1 {
+		return false
+	}
+
+	p := params.List[0]
+	if ident, ok := p.Type.(*ast.StarExpr); ok {
+		if selector, ok := ident.X.(*ast.SelectorExpr); ok {
+			if selectorX, ok := selector.X.(*ast.Ident); ok && selectorX.Name != "testing" {
+				return false
+			}
+
+			return selector.Sel.Name == "T"
+		}
+	}
+
+	return false
 }
 
 func providerCalls(gen *ast.FuncDecl) (calls []string) {

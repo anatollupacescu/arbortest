@@ -1,8 +1,11 @@
 package example
 
-func testOne() error {
+import (
+	"testing"
+)
+
+func testOne(t *testing.T) {
 	_ = providerOne()
-	return nil
 }
 
 func providerOne() int {

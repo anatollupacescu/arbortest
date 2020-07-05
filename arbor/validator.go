@@ -2,6 +2,7 @@ package arbor
 
 import (
 	"fmt"
+	"log"
 )
 
 // ErrInvalidProviderCall is returned when a tests calls a provider without an associated validator.
@@ -13,13 +14,16 @@ func (e *ErrInvalidProviderCall) Error() string {
 	return fmt.Sprintf("%q calls invalid provider: %q", e.test, e.provider)
 }
 
-// ErrNoTestsDeclared returned when no testing code is found in the given test files.
-var ErrNoTestsDeclared = fmt.Errorf("no tests found declared in the given folder files")
+var (
+	// ErrNoTestsDeclared returned when no testing code is found in the given test files.
+	ErrNoTestsDeclared = fmt.Errorf("no tests found declared in the given folder files")
+	// ErrIncompleteTestConfiguration returned when there is less than two providers declared
+	ErrIncompleteTestConfiguration = fmt.Errorf("incomplete test configuration")
+)
 
-func validateErr(calls map[string][]string) (errors []error) {
+func validateErr(calls map[string][]string) (err error) {
 	if len(calls) == 0 {
-		errors = append(errors, ErrNoTestsDeclared)
-		return
+		return ErrNoTestsDeclared
 	}
 
 	var validProviders = validProviders(calls)
@@ -28,15 +32,31 @@ func validateErr(calls map[string][]string) (errors []error) {
 		for i := range v {
 			prov := v[i]
 			if _, ok := validProviders[prov]; !ok {
-				e := ErrInvalidProviderCall{
+				return &ErrInvalidProviderCall{
 					f, v[i],
 				}
-				errors = append(errors, &e)
 			}
 		}
 	}
 
-	return
+	return validateConfiguration(calls)
+}
+
+func validateConfiguration(calls map[string][]string) error {
+	valid := false
+
+	for _, v := range calls {
+		if len(v) > 1 {
+			valid = true
+			break
+		}
+	}
+
+	if !valid {
+		return ErrIncompleteTestConfiguration
+	}
+
+	return nil
 }
 
 func validProviders(calls map[string][]string) (vp map[string]bool) {
@@ -51,30 +71,30 @@ func validProviders(calls map[string][]string) (vp map[string]bool) {
 	return
 }
 
-func validateWarns(callSuite suite) (warnings []string) {
-	if len(callSuite.calls) == 0 {
-		warnings = append(warnings, "no tests found")
-		return
-	}
-
+func printWarnings(callSuite suite) {
 	var unusedProviders = unusedProviders(callSuite)
 
 	for _, p := range unusedProviders {
-		w := fmt.Sprintf("%q declared but not used", p)
-		warnings = append(warnings, w)
+		log.Printf("\u26a1 warning: %q declared but not used", p)
 	}
-
-	return
 }
 
 func unusedProviders(callSuite suite) (unused []string) {
-	var all = make([]string, 0, len(callSuite.calls))
+	var all = make([]string, 0, len(callSuite))
 
-	for _, v := range callSuite.calls {
+	for _, v := range callSuite {
 		all = append(all, v...)
 	}
 
-	for _, p := range callSuite.providers {
+	var providers []string
+
+	for _, v := range callSuite {
+		if len(v) == 1 {
+			providers = append(providers, v...)
+		}
+	}
+
+	for _, p := range providers {
 		var found bool
 
 		for _, e := range all {

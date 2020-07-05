@@ -2,7 +2,6 @@ package arbor
 
 import (
 	"fmt"
-	"log"
 )
 
 type (
@@ -24,47 +23,39 @@ type (
 var ErrNoTestFilesFound = fmt.Errorf("no test files found")
 
 // Generate takes a folder and produces a file capable of running the tests in that location.
-func Generate(dir Dir, out OutFile, pkg string) []error {
+func Generate(dir Dir, out OutFile, pkg string) error {
 	var testFiles = dir.ListTestFiles()
 	if len(testFiles) == 0 {
-		return []error{ErrNoTestFilesFound}
+		return ErrNoTestFilesFound
 	}
 
-	var callSuite, errs = parseFiles(testFiles)
+	var callSuite = buildSuite(testFiles)
 
-	if len(errs) > 0 {
-		return errs
+	printWarnings(callSuite)
+
+	if err := validateErr(callSuite); err != nil {
+		return err
 	}
 
 	output := generateSource(pkg, callSuite)
 	if err := out.WriteContents(output); err != nil {
-		return []error{err}
+		return err
 	}
 
 	return nil
 }
 
-func parseFiles(testFiles []File) (map[string][]string, []error) {
-	var s suite
-
-	s.calls = make(map[string][]string)
+func buildSuite(testFiles []File) suite {
+	var s = make(suite)
 
 	for _, fileName := range testFiles {
 		fileContents := fileName.ReadContents()
-		result := parseSource(fileContents)
-		s.providers = append(s.providers, result.providers...)
 
-		for k, v := range result.calls {
-			s.calls[k] = v
+		result := parseSource(fileContents)
+		for k, v := range result {
+			s[k] = v
 		}
 	}
 
-	warnings := validateWarns(s)
-	errs := validateErr(s.calls)
-
-	for _, warn := range warnings {
-		log.Printf("\u26a1 warning: %s", warn)
-	}
-
-	return s.calls, errs
+	return s
 }

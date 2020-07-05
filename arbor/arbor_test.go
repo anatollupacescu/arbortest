@@ -1,7 +1,6 @@
 package arbor_test
 
 import (
-	"sort"
 	"testing"
 
 	"github.com/anatollupacescu/arbortest/arbor"
@@ -30,89 +29,43 @@ func (t *TestOutFile) WriteContents(contents string) error {
 	return t.err
 }
 
-func TestArbor(t *testing.T) {
-	t.Run("given a folder with no test files", func(t *testing.T) {
-		var emptyDir = TestDir(func() []arbor.File {
-			return nil
-		})
-
-		t.Run("errors", func(t *testing.T) {
-			errors := arbor.Generate(&emptyDir, nil, "test")
-			if assert.Len(t, errors, 1) {
-				expected := arbor.ErrNoTestFilesFound
-				assert.Equal(t, expected, errors[0])
-			}
-		})
+func TestNoFiles(t *testing.T) {
+	var emptyDir = TestDir(func() []arbor.File {
+		return nil
 	})
-	t.Run("given a file without tests", func(t *testing.T) {
-		var noTestsFile = TestFile("package test")
-		var emptyDir = TestDir(func() []arbor.File {
-			return []arbor.File{&noTestsFile}
-		})
-		var outFile = &TestOutFile{}
 
-		t.Run("errors", func(t *testing.T) {
-			errors := arbor.Generate(&emptyDir, outFile, "ignored")
-			if assert.Len(t, errors, 1) {
-				expected := arbor.ErrNoTestsDeclared
-				assert.Equal(t, expected, errors[0])
-				assert.Equal(t, "", outFile.contents)
-			}
-		})
+	t.Run("errors", func(t *testing.T) {
+		err := arbor.Generate(&emptyDir, nil, "test")
+		assert.Equal(t, arbor.ErrNoTestFilesFound, err)
 	})
-	t.Run("given a file with one test", func(t *testing.T) {
-		var src = `package testing
+}
 
-func testOne() error {
+func TestNoValidTestsDeclared(t *testing.T) {
+	var src = `package sample
+
+func testOld() error {
 	return nil
-}`
-
-		var noTestsFile = TestFile(src)
-
-		var emptyDir = TestDir(func() []arbor.File {
-			return []arbor.File{&noTestsFile}
-		})
-		var outFile = &TestOutFile{}
-
-		t.Run("registers one test", func(t *testing.T) {
-			errors := arbor.Generate(&emptyDir, outFile, "testing")
-			assert.Len(t, errors, 0)
-
-			expected := `package testing
-
-import (
-	"testing"
-
-	"github.com/anatollupacescu/arbortest/runner"
-)
-
-func TestArbor(t *testing.T) {
-	var validators map[string]string
-	dependencies := map[string][]string{
-		"testOne": {},
-	}
-	tests := map[string]func() error{
-		"testOne": testOne,
-	}
-
-	r := runner.Run(validators, dependencies, tests)
-
-	if r.Error != "" {
-		t.Error(r.Error)
-		return
-	}
-
-	runner.Upload(r.Output)
 }
 `
-			assert.Equal(t, expected, outFile.contents)
-		})
+	var noTestsFile = TestFile(src)
+	var emptyDir = TestDir(func() []arbor.File {
+		return []arbor.File{&noTestsFile}
 	})
+	var outFile = &TestOutFile{}
 
-	t.Run("given a test and a related provider", func(t *testing.T) {
-		var src = `package sample
+	t.Run("errors", func(t *testing.T) {
+		err := arbor.Generate(&emptyDir, outFile, "ignored")
+		assert.Equal(t, arbor.ErrNoTestsDeclared, err)
+		assert.Equal(t, "", outFile.contents)
+	})
+}
 
-func testOne() error {
+func TestIncompleteConfiguration(t *testing.T) {
+	var src = `package sample
+
+import "testing"
+
+func testOne(t *testing.T) {
 	_ = providerOne()
 	return nil
 }
@@ -121,51 +74,27 @@ func providerOne() int {
 	return 0
 }`
 
-		var (
-			testProviderFile = TestFile(src)
-			singleFileDir    = TestDir(func() []arbor.File {
-				return []arbor.File{&testProviderFile}
-			})
-			outFile = &TestOutFile{}
-		)
-
-		t.Run("should register test", func(t *testing.T) {
-			errors := arbor.Generate(&singleFileDir, outFile, "sample")
-			assert.Len(t, errors, 0)
-
-			expected := `package sample
-
-import (
-	"testing"
-
-	"github.com/anatollupacescu/arbortest/runner"
-)
-
-func TestArbor(t *testing.T) {
-	var validators map[string]string
-	var dependencies map[string][]string
-	tests := map[string]func() error{
-		"testOne": testOne,
-	}
-
-	r := runner.Run(validators, dependencies, tests)
-
-	if r.Error != "" {
-		t.Error(r.Error)
-		return
-	}
-
-	runner.Upload(r.Output)
-}
-`
-			assert.Equal(t, expected, outFile.contents)
+	var (
+		testProviderFile = TestFile(src)
+		singleFileDir    = TestDir(func() []arbor.File {
+			return []arbor.File{&testProviderFile}
 		})
+		outFile = &TestOutFile{}
+	)
+
+	t.Run("errors", func(t *testing.T) {
+		err := arbor.Generate(&singleFileDir, outFile, "sample")
+		assert.Equal(t, arbor.ErrIncompleteTestConfiguration, err)
+		assert.Equal(t, "", outFile.contents)
 	})
+}
 
-	t.Run("given a test and two invalidated providers", func(t *testing.T) {
-		var src = `package random
+func TestCallToInvalidatedProvider(t *testing.T) {
+	var src = `package random
 
-func testOne() error {
+import "testing"
+
+func testOne(t *testing.T) {
 	_ = providerOne()
 	return nil
 }
@@ -174,7 +103,7 @@ func providerOne() int {
 	return 0
 }
 
-func testTwo() error {
+func testTwo(t *testing.T) {
 	_ = providerOne()
 	_ = providerTwo()
 	_ = providerThree()
@@ -189,34 +118,29 @@ func providerThree() int {
 	return 0
 }`
 
-		var (
-			testProviderFile = TestFile(src)
-			singleFileDir    = TestDir(func() []arbor.File {
-				return []arbor.File{&testProviderFile}
-			})
-			outFile = &TestOutFile{}
-		)
-
-		t.Run("returns two errors", func(t *testing.T) {
-			errors := arbor.Generate(&singleFileDir, outFile, "random")
-			if assert.Len(t, errors, 2) {
-				sort.Slice(errors, func(i, j int) bool {
-					return errors[i].Error() < errors[j].Error()
-				})
-				err1, ok1 := errors[0].(*arbor.ErrInvalidProviderCall)
-				err2, ok2 := errors[1].(*arbor.ErrInvalidProviderCall)
-				assert.True(t, ok1 && ok2, "errors are of the correct type")
-
-				assert.EqualError(t, err1, `"testTwo" calls invalid provider: "providerThree"`)
-				assert.EqualError(t, err2, `"testTwo" calls invalid provider: "providerTwo"`)
-			}
-			assert.Equal(t, "", outFile.contents)
+	var (
+		testProviderFile = TestFile(src)
+		singleFileDir    = TestDir(func() []arbor.File {
+			return []arbor.File{&testProviderFile}
 		})
-	})
-	t.Run("given a valid test", func(t *testing.T) {
-		var src = `package main
+		outFile = &TestOutFile{}
+	)
 
-func testOne() error {
+	t.Run("returns two errors", func(t *testing.T) {
+		err := arbor.Generate(&singleFileDir, outFile, "random")
+		err2, ok := err.(*arbor.ErrInvalidProviderCall)
+		assert.True(t, ok)
+		assert.EqualError(t, err2, `"testTwo" calls invalid provider: "providerTwo"`)
+		assert.Equal(t, "", outFile.contents)
+	})
+}
+
+func TestValidCase(t *testing.T) {
+	var src = `package main
+
+import "testing"
+
+func testOne(t *testing.T) {
 	_ = providerOne()
 	return nil
 }
@@ -225,7 +149,7 @@ func providerOne() int {
 	return 0
 }
 
-func testTwo() error {
+func testTwo(t *testing.T) {
 	_ = providerTwo()
 	return nil
 }
@@ -234,24 +158,24 @@ func providerTwo() int {
 	return 0
 }
 
-func testMain() error {
+func testMain(t *testing.T) {
 	_ = providerOne()
 	_ = providerTwo()
 	return nil
 }
 `
-		var (
-			testProviderFile = TestFile(src)
-			singleFileDir    = TestDir(func() []arbor.File {
-				return []arbor.File{&testProviderFile}
-			})
-			outFile = &TestOutFile{}
-		)
+	var (
+		testProviderFile = TestFile(src)
+		singleFileDir    = TestDir(func() []arbor.File {
+			return []arbor.File{&testProviderFile}
+		})
+		outFile = &TestOutFile{}
+	)
 
-		t.Run("correct file is generated", func(t *testing.T) {
-			errors := arbor.Generate(&singleFileDir, outFile, "main")
-			assert.Len(t, errors, 0)
-			expected := `package main
+	t.Run("correct file is generated", func(t *testing.T) {
+		err := arbor.Generate(&singleFileDir, outFile, "main")
+		assert.NoError(t, err)
+		expected := `package main
 
 import (
 	"testing"
@@ -260,33 +184,30 @@ import (
 )
 
 func TestArbor(t *testing.T) {
-	validators := map[string]string{
-		"testOne": "providerOne", "testTwo": "providerTwo",
-	}
 	dependencies := map[string][]string{
-		"testMain": {"providerOne", "providerTwo"},
+		"testMain": {"providerOne", "providerTwo"}, "testOne": {"providerOne"}, "testTwo": {"providerTwo"},
 	}
-	tests := map[string]func() error{
+	tests := map[string]func(*testing.T) {
 		"testMain": testMain, "testOne": testOne, "testTwo": testTwo,
 	}
 
-	r := runner.Run(validators, dependencies, tests)
+	output := runner.Run(t, dependencies, tests)
 
-	if r.Error != "" {
-		t.Error(r.Error)
-		return
+	if t.Failed() {
+		t.Log("FAIL")
 	}
 
-	runner.Upload(r.Output)
+	runner.Upload(output)
 }
 `
-			assert.Equal(t, expected, outFile.contents)
-		})
+		assert.Equal(t, expected, outFile.contents)
 	})
-	t.Run("given two valid test files", func(t *testing.T) {
-		var src1 = `package main
+}
 
-func testOne() error {
+func TestValidCaseTwoFiles(t *testing.T) {
+	var src1 = `package main
+
+func testOne(t *testing.T) {
 	_ = providerOne()
 	return nil
 }
@@ -295,37 +216,37 @@ func providerOne() int {
 	return 0
 }
 
-func testTwo() error {
+func testTwo(t *testing.T) {
 	_ = providerTwo()
 	return nil
 }
 `
 
-		var src2 = `package main
+	var src2 = `package main
 
 func providerTwo() int {
 	return 0
 }
 
-func testMain() error {
+func testMain(t *testing.T) {
 	_ = providerOne()
 	_ = providerTwo()
 	return nil
 }
 `
-		var (
-			testProviderFile1 = TestFile(src1)
-			testProviderFile2 = TestFile(src2)
-			singleFileDir     = TestDir(func() []arbor.File {
-				return []arbor.File{&testProviderFile1, &testProviderFile2}
-			})
-			outFile = &TestOutFile{}
-		)
+	var (
+		testProviderFile1 = TestFile(src1)
+		testProviderFile2 = TestFile(src2)
+		singleFileDir     = TestDir(func() []arbor.File {
+			return []arbor.File{&testProviderFile1, &testProviderFile2}
+		})
+		outFile = &TestOutFile{}
+	)
 
-		t.Run("it parses both as one", func(t *testing.T) {
-			errors := arbor.Generate(&singleFileDir, outFile, "main")
-			assert.Len(t, errors, 0)
-			expected := `package main
+	t.Run("it parses both as one", func(t *testing.T) {
+		err := arbor.Generate(&singleFileDir, outFile, "main")
+		assert.NoError(t, err)
+		expected := `package main
 
 import (
 	"testing"
@@ -334,27 +255,22 @@ import (
 )
 
 func TestArbor(t *testing.T) {
-	validators := map[string]string{
-		"testOne": "providerOne", "testTwo": "providerTwo",
-	}
 	dependencies := map[string][]string{
-		"testMain": {"providerOne", "providerTwo"},
+		"testMain": {"providerOne", "providerTwo"}, "testOne": {"providerOne"}, "testTwo": {"providerTwo"},
 	}
-	tests := map[string]func() error{
+	tests := map[string]func(*testing.T) {
 		"testMain": testMain, "testOne": testOne, "testTwo": testTwo,
 	}
 
-	r := runner.Run(validators, dependencies, tests)
+	output := runner.Run(t, dependencies, tests)
 
-	if r.Error != "" {
-		t.Error(r.Error)
-		return
+	if t.Failed() {
+		t.Log("FAIL")
 	}
 
-	runner.Upload(r.Output)
+	runner.Upload(output)
 }
 `
-			assert.Equal(t, expected, outFile.contents)
-		})
+		assert.Equal(t, expected, outFile.contents)
 	})
 }

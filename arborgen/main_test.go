@@ -29,13 +29,25 @@ func tearDown(t *testing.T) {
 	}
 }
 
-func testOne() error {
+func testOne(t *testing.T) {
 	_ = providerOne()
-	return nil
 }
 
 func providerOne() int {
 	return 0
+}
+
+func testTwo(t *testing.T) {
+	_ = providerTwo()
+}
+
+func providerTwo() int {
+	return 0
+}
+
+func testMain(t *testing.T) {
+	_ = providerOne()
+	_ = providerTwo()
 }
 
 func TestIntegrationListTestFiles(t *testing.T) {
