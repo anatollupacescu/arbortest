@@ -1,20 +1,22 @@
 package runner
 
-import "testing"
-
-type status int
+import (
+	"sort"
+	"testing"
+)
 
 const (
-	pending = status(iota)
+	pending = iota
 	fail
 	pass
+	skip
 )
 
 type test struct {
-	name    string
-	deps    []*test
-	runFunc func(t *testing.T)
-	status  status
+	name      string
+	providers []string
+	runFunc   func(t *testing.T)
+	status    int
 }
 
 type (
@@ -23,82 +25,51 @@ type (
 )
 
 // Run entry point.
-func Run(t *testing.T, d dependencies, tt tests) string {
-	newTests := make([]*test, 0, len(tt))
+func Run(t *testing.T, dd dependencies, tt tests) string {
+	all := make([]*test, 0, len(tt))
 
-	for name, testFunc := range tt {
-		providers := d[name]
-		if len(providers) == 1 {
-			continue
-		}
-
-		newTests = append(newTests, &test{
-			name:    name,
-			runFunc: testFunc,
-			deps:    computeDeps(providers, d, tt),
+	for testName, providers := range dd {
+		all = append(all, &test{
+			name:      testName,
+			providers: providers,
+			runFunc:   tt[testName],
+			status:    pass,
 		})
 	}
 
-	for _, v := range newTests {
-		v := v
-		t.Run(v.name, func(t2 *testing.T) {
-			v.run(t2)
-		})
-	}
+	sort.Slice(all, func(i, j int) bool {
+		return len(all[i].providers) < len(all[j].providers)
+	})
 
-	return marshal(newTests...)
-}
+	failedProviders := make(map[string]bool)
 
-func computeDeps(providers []string, d dependencies, t tests) []*test {
-	out := make([]*test, 0)
+	for _, a := range all {
+		var hasAFailedProvider bool
 
-	for _, givenProvider := range providers {
-		for testName, testProviders := range d {
-			if len(testProviders) != 1 {
-				continue
-			}
-
-			if testProviders[0] == givenProvider {
-				out = append(out, &test{
-					name:    testName,
-					runFunc: t[testName],
-				})
+		for _, ap := range a.providers {
+			if _, found := failedProviders[ap]; found {
+				hasAFailedProvider = true
+				break
 			}
 		}
-	}
 
-	return out
-}
-
-func (ts *test) run(t *testing.T) {
-	if hasFailingDependencies(ts.deps, t) {
-		return
-	}
-
-	ts.runFunc(t)
-}
-
-func hasFailingDependencies(deps []*test, t *testing.T) bool {
-	if len(deps) == 0 {
-		return false
-	}
-
-	for _, dep := range deps {
-		switch dep.status {
-		case pass:
+		if hasAFailedProvider {
+			a.status = skip
 			continue
-		case fail:
-			return true
-		case pending:
-			dep.run(t)
+		}
 
+		a := a
+		t.Run(a.name, func(t *testing.T) {
+			a.runFunc(t)
 			if t.Failed() {
-				return true
+				a.status = fail
 			}
-		default:
-			return false
-		}
+
+			if a.status == fail && len(a.providers) == 1 {
+				failedProviders[a.providers[0]] = true
+			}
+		})
 	}
 
-	return false
+	return marshal(all...)
 }

@@ -39,23 +39,6 @@ func validateErr(calls map[string][]string) (err error) {
 		}
 	}
 
-	return validateConfiguration(calls)
-}
-
-func validateConfiguration(calls map[string][]string) error {
-	valid := false
-
-	for _, v := range calls {
-		if len(v) > 1 {
-			valid = true
-			break
-		}
-	}
-
-	if !valid {
-		return ErrIncompleteTestConfiguration
-	}
-
 	return nil
 }
 

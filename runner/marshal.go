@@ -22,13 +22,43 @@ type output struct {
 const defaultWeight = 3
 
 func marshal(tests ...*test) string {
+	var statuses = []string{"pending", "fail", "pass", "skip"}
+
 	out := output{
 		Nodes: make([]node, 0),
 		Links: make([]link, 0),
 	}
 
-	for _, t := range tests {
-		marshalTest(t, &out)
+	providers := make(map[string]node)
+
+	for _, ts := range tests {
+		n := node{
+			ID:     ts.name,
+			Group:  ts.status,
+			Status: statuses[ts.status],
+		}
+
+		out.Nodes = append(out.Nodes, n)
+
+		for _, providerName := range ts.providers {
+			providers[providerName] = node{
+				ID:     providerName,
+				Group:  ts.status,
+				Status: statuses[ts.status],
+			}
+
+			l := link{
+				Source: ts.name,
+				Target: providerName,
+				Value:  defaultWeight, //TODO make configurable
+			}
+
+			out.Links = append(out.Links, l)
+		}
+	}
+
+	for i := range providers {
+		out.Nodes = append(out.Nodes, providers[i])
 	}
 
 	bytes, err := json.Marshal(out)
@@ -37,44 +67,4 @@ func marshal(tests ...*test) string {
 	}
 
 	return string(bytes)
-}
-
-func marshalTest(ts *test, out *output) {
-	for _, t := range ts.deps {
-		marshalTest(t, out)
-	}
-
-	for _, d := range ts.deps {
-		l := link{
-			Source: ts.name,
-			Target: d.name,
-			Value:  defaultWeight, //TODO make configurable
-		}
-
-		out.Links = append(out.Links, l)
-	}
-
-	if contains(out.Nodes, ts.name) {
-		return
-	}
-
-	var statuses = []string{"pending", "fail", "pass"}
-
-	n := node{
-		ID:     ts.name,
-		Group:  int(ts.status),
-		Status: statuses[ts.status],
-	}
-
-	out.Nodes = append(out.Nodes, n)
-}
-
-func contains(ns []node, name string) bool {
-	for i := 0; i < len(ns); i++ {
-		if ns[i].ID == name {
-			return true
-		}
-	}
-
-	return false
 }

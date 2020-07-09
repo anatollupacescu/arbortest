@@ -7,28 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type TestDir func() []arbor.File
-
-func (t *TestDir) ListTestFiles() (out []arbor.File) {
-	return (*t)()
-}
-
-type TestFile string
-
-func (t *TestFile) ReadContents() string {
-	return string(*t)
-}
-
-type TestOutFile struct {
-	contents string
-	err      error
-}
-
-func (t *TestOutFile) WriteContents(contents string) error {
-	t.contents = contents
-	return t.err
-}
-
 func TestNoFiles(t *testing.T) {
 	var emptyDir = TestDir(func() []arbor.File {
 		return nil
@@ -60,7 +38,7 @@ func testOld() error {
 	})
 }
 
-func TestIncompleteConfiguration(t *testing.T) {
+func TestSingle(t *testing.T) {
 	var src = `package sample
 
 import "testing"
@@ -84,8 +62,33 @@ func providerOne() int {
 
 	t.Run("errors", func(t *testing.T) {
 		err := arbor.Generate(&singleFileDir, outFile, "sample")
-		assert.Equal(t, arbor.ErrIncompleteTestConfiguration, err)
-		assert.Equal(t, "", outFile.contents)
+		assert.NoError(t, err)
+		expected := `package sample
+
+import (
+	"testing"
+
+	"github.com/anatollupacescu/arbortest/runner"
+)
+
+func TestArbor(t *testing.T) {
+	dependencies := map[string][]string{
+		"testOne": {"providerOne"},
+	}
+	tests := map[string]func(*testing.T) {
+		"testOne": testOne,
+	}
+
+	output := runner.Run(t, dependencies, tests)
+
+	if t.Failed() {
+		t.Log("FAIL")
+	}
+
+	runner.Upload(output)
+}
+`
+		assert.Equal(t, expected, outFile.contents)
 	})
 }
 
@@ -273,4 +276,27 @@ func TestArbor(t *testing.T) {
 `
 		assert.Equal(t, expected, outFile.contents)
 	})
+}
+
+//helpers
+type TestDir func() []arbor.File
+
+func (t *TestDir) ListTestFiles() (out []arbor.File) {
+	return (*t)()
+}
+
+type TestFile string
+
+func (t *TestFile) ReadContents() string {
+	return string(*t)
+}
+
+type TestOutFile struct {
+	contents string
+	err      error
+}
+
+func (t *TestOutFile) WriteContents(contents string) error {
+	t.contents = contents
+	return t.err
 }

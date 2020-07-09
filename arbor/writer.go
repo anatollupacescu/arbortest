@@ -59,7 +59,7 @@ func (d dependency) String() string {
 }
 
 func generateSource(pkg string, calls map[string][]string) string {
-	var dependencyList = make([]string, len(calls))
+	var dependencyList = make([]string, 0, len(calls))
 
 	testList := make([]string, 0, len(calls))
 
