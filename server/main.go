@@ -81,15 +81,24 @@ const index = `<!DOCTYPE html>
     font-family: sans-serif;
     font-size: 15px;
   }
+
+  body {
+    background-color: lightyellow;
+  }
+  
+  svg {
+    background-color: lightsalmon;
+  }
+
 </style>
-<svg width="960" height="600"></svg>
+<svg width="1280" height="800"></svg>
 <script src="https://d3js.org/d3.v4.js"></script>
 <script>
   var svg = d3.select("svg"),
     width = +svg.attr("width"),
     height = +svg.attr("height");
 
-  var color = ['gray', 'green', 'red'];
+  var color = ['gray', 'red', 'green', 'gray'];
 
   var simulation = d3
     .forceSimulation()
