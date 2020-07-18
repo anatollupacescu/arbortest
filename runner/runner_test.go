@@ -4,97 +4,183 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/anatollupacescu/arbortest/runner"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/anatollupacescu/arbortest/runner"
 )
 
-func TestSimple(t *testing.T) {
-	t.Run("given a minimal dependency configuration", func(t *testing.T) {
-		deps := map[string][]string{
-			"test1": {"provider1"},
-		}
-
-		var count int
-		tests := map[string]func(t *testing.T){
-			"test1": incOK(&count),
-		}
-
-		output := runner.Run(t, deps, tests)
-
-		t.Run("all tests pass", func(t *testing.T) {
-			assert.Equal(t, 1, count)
-		})
-		t.Run("given", func(t *testing.T) {
-			assert.False(t, t.Failed())
-		})
-		t.Run("correct output", func(t *testing.T) {
-			expected := `
-{
-	"nodes": [
-		{"id": "test1",	"group":2,"status":"pass"},
-		{"id": "provider1","group":2,"status":"pass"}],
-	"links": [{
-		"source": "test1",
-		"target": "provider1",
-		"value": 3
-	}]
-}
-`
-			expected = strings.ReplaceAll(expected, "\t", "")
-			expected = strings.ReplaceAll(expected, "\n", "")
-			expected = strings.ReplaceAll(expected, " ", "")
-			assert.Equal(t, expected, output)
-		})
-	})
+func TestInitial(t *testing.T) {
+	r := runner.New()
+	json := r.JSON()
+	assert.Equal(t, `{"nodes":[],"links":[]}`, json)
 }
 
-func TestComplex(t *testing.T) {
-	t.Run("given a minimal dependency configuration", func(t *testing.T) {
-		deps := map[string][]string{
-			"test1": {"provider1"},
-			"test2": {"provider2"},
-			"test3": {"provider1", "provider2"},
-		}
+func TestSingleAppend(t *testing.T) {
+	rt := runner.NewT(t)
+	r := runner.New()
+	r.Group("group")
+	r.Append(rt, "test", func(*runner.T) {})
 
-		t.Run("when both providers are validated", func(t *testing.T) {
-			var count int
-			tests := map[string]func(t *testing.T){
-				"test1": incOK(&count),
-				"test2": incOK(&count),
-				"test3": incOK(&count),
-			}
+	json := `{"nodes":[
+		{"id": "group", "group":2, "status":"pass"},
+		{"id": "test",  "group":2, "status":"pass"}
+	], 
+	"links":[
+		{"source": "test","target": "group","value": 3}
+	]}`
 
-			output := runner.Run(t, deps, tests)
-
-			t.Run("all tests pass", func(t *testing.T) {
-				assert.Equal(t, 3, count)
-			})
-			t.Run("correct output", func(t *testing.T) {
-				expected := `
-{
-	"nodes": [
-		{"id": "test1",	"group":2,"status":"pass"},
-		{"id": "test2",	"group":2,"status":"pass"},
-		{"id": "test3",	"group":2,"status":"pass"},
-		{"id": "provider1","group":2,"status":"pass"},
-		{"id": "provider2","group":2,"status":"pass"}],
-	"links": [
-		{"source": "test1","target": "provider1","value": 3},
-		{"source": "test2","target": "provider2","value": 3},
-		{"source": "test3","target": "provider1","value": 3},
-		{"source": "test3","target": "provider2","value": 3}]
-}`
-				expected = strings.ReplaceAll(expected, "\t", "")
-				expected = strings.ReplaceAll(expected, "\n", "")
-				expected = strings.ReplaceAll(expected, " ", "")
-				assert.Equal(t, expected, output)
-			})
-		})
-	})
+	json = strings.ReplaceAll(json, "\t", "")
+	json = strings.ReplaceAll(json, "\n", "")
+	json = strings.ReplaceAll(json, " ", "")
+	assert.Equal(t, json, r.JSON())
 }
 
-func incOK(counter *int) func(t *testing.T) {
-	return func(t *testing.T) {
-		*counter++
-	}
+func TestTwoAppend(t *testing.T) {
+	rt := runner.NewT(t)
+	r := runner.New()
+	r.Group("group")
+	r.Append(rt, "test", func(*runner.T) {})
+	r.Append(rt, "test2", func(*runner.T) {})
+
+	json := `{"nodes":[
+		{"id": "group", "group":2, "status":"pass"},
+		{"id": "test",  "group":2, "status":"pass"},
+		{"id": "test2",  "group":2, "status":"pass"}
+	], 
+	"links":[
+		{"source": "test","target": "group","value": 3},
+		{"source": "test2","target": "group","value": 3}
+	]}`
+
+	json = strings.ReplaceAll(json, "\t", "")
+	json = strings.ReplaceAll(json, "\n", "")
+	json = strings.ReplaceAll(json, " ", "")
+	assert.Equal(t, json, r.JSON())
+}
+
+func TestTwoGrops(t *testing.T) {
+	rt := runner.NewT(t)
+	r := runner.New()
+	r.Group("group")
+	r.Append(rt, "test", func(*runner.T) {})
+	r.Append(rt, "test2", func(*runner.T) {})
+
+	r.Group("group2")
+	r.Append(rt, "test", func(*runner.T) {})
+	r.Append(rt, "test2", func(*runner.T) {})
+
+	json := `{"nodes":[
+		{"id": "group", "group":2, "status":"pass"},
+		{"id": "test",  "group":2, "status":"pass"},
+		{"id": "test2",  "group":2, "status":"pass"},
+		{"id": "group2", "group":2, "status":"pass"},
+		{"id": "test",  "group":2, "status":"pass"},
+		{"id": "test2",  "group":2, "status":"pass"}
+	], 
+	"links":[
+		{"source": "test","target": "group","value": 3},
+		{"source": "test2","target": "group","value": 3},
+		{"source": "test","target": "group2","value": 3},
+		{"source": "test2","target": "group2","value": 3}
+	]}`
+
+	json = strings.ReplaceAll(json, "\t", "")
+	json = strings.ReplaceAll(json, "\n", "")
+	json = strings.ReplaceAll(json, " ", "")
+	assert.Equal(t, json, r.JSON())
+}
+
+func TestAfterCreatesLink(t *testing.T) {
+	rt := runner.NewT(t)
+	r := runner.New()
+	r.Group("group")
+	r.Append(rt, "test", func(*runner.T) {})
+	r.Append(rt, "test2", func(*runner.T) {})
+	// mock := &fakeT{}
+	// at2 := arbor.NewT(mock)
+	r.Group("group2")
+	r.After(rt, "group")
+	r.Append(rt, "test", func(*runner.T) {})
+	r.Append(rt, "test2", func(*runner.T) {})
+
+	json := `{"nodes":[
+		{"id":"group","group":2,"status":"pass"},
+		{"id":"test","group":2,"status":"pass"},
+		{"id":"test2","group":2,"status":"pass"},
+		{"id":"group2","group":2,"status":"pass"},
+		{"id":"test","group":2,"status":"pass"},
+		{"id":"test2","group":2,"status":"pass"},
+		{"id":"group2-ext","group":2,"status":"pass"},
+		{"id":"group-ext","group":2,"status":"pass"}],
+	"links":[
+		{"source":"test","target":"group","value":3},
+		{"source":"test2","target":"group","value":3},
+		{"source":"test","target":"group2","value":3},
+		{"source":"test2","target":"group2","value":3},
+		{"source":"group2-ext","target":"group2","value":3},
+		{"source":"group2-ext","target":"group-ext","value":3},
+		{"source":"group-ext","target":"group","value":3}]}`
+
+	json = strings.ReplaceAll(json, "\t", "")
+	json = strings.ReplaceAll(json, "\n", "")
+	json = strings.ReplaceAll(json, " ", "")
+	assert.Equal(t, json, r.JSON())
+}
+
+func TestAfterFailedGroup(t *testing.T) {
+	mock := &fakeT{}
+	rt := runner.NewT(mock)
+	r := runner.New()
+	r.Group("group")
+	r.Append(rt, "test", func(*runner.T) {})
+	r.Append(rt, "test2", func(at *runner.T) { at.Error("stop here") })
+
+	r.Group("group2")
+	mock = &fakeT{}
+	rt = runner.NewT(mock)
+	r.After(rt, "group")
+	r.Append(rt, "test", func(*runner.T) {})
+	r.Append(rt, "test2", func(*runner.T) {})
+
+	json := `{"nodes":[
+		{"id":"group","group":1,"status":"fail"},
+		{"id":"test","group":2,"status":"pass"},
+		{"id":"test2","group":1,"status":"fail"},
+		{"id":"group2","group":0,"status":"skip"},
+		{"id":"test","group":0,"status":"skip"},
+		{"id":"test2","group":0,"status":"skip"},
+		{"id":"group2-ext","group":0,"status":"skip"},
+		{"id":"group-ext","group":0,"status":"skip"}],
+	"links":[
+		{"source":"test","target":"group","value":3},
+		{"source":"test2","target":"group","value":3},
+		{"source":"test","target":"group2","value":3},
+		{"source":"test2","target":"group2","value":3},
+		{"source":"group2-ext","target":"group2","value":3},
+		{"source":"group2-ext","target":"group-ext","value":3},
+		{"source":"group-ext","target":"group","value":3}]}`
+
+	json = strings.ReplaceAll(json, "\t", "")
+	json = strings.ReplaceAll(json, "\n", "")
+	json = strings.ReplaceAll(json, " ", "")
+	assert.Equal(t, json, r.JSON())
+}
+
+type fakeT struct {
+	fail bool
+}
+
+func (f *fakeT) Failed() bool {
+	return f.fail
+}
+
+func (f *fakeT) Error(args ...interface{}) {
+	f.fail = true
+}
+
+func (f *fakeT) Errorf(format string, args ...interface{}) {
+	f.fail = true
+}
+
+func (f *fakeT) Log(args ...interface{}) {
 }

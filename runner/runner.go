@@ -1,75 +1,109 @@
 package runner
 
-import (
-	"sort"
-	"testing"
-)
+type status uint8
 
 const (
-	pending = iota
+	skip status = iota
 	fail
 	pass
-	skip
 )
 
-type test struct {
-	name      string
-	providers []string
-	runFunc   func(t *testing.T)
-	status    int
+type group struct {
+	name   string
+	status status
+	tests  []test
 }
 
-type (
-	dependencies map[string][]string
-	tests        map[string]func(t *testing.T)
-)
+type test struct {
+	name   string
+	status status
+}
 
-// Run entry point.
-func Run(t *testing.T, dd dependencies, tt tests) string {
-	all := make([]*test, 0, len(tt))
+type groups []group
 
-	for testName, providers := range dd {
-		all = append(all, &test{
-			name:      testName,
-			providers: providers,
-			runFunc:   tt[testName],
-			status:    pass,
-		})
+func (gg *groups) add(g group) {
+	*gg = append(*gg, g)
+}
+
+func (gg groups) get(name string) *group {
+	for i := range gg {
+		g := &gg[i]
+		if g.name == name {
+			return g
+		}
 	}
 
-	sort.Slice(all, func(i, j int) bool {
-		return len(all[i].providers) < len(all[j].providers)
+	return new(group)
+}
+
+// Graph exported.
+type Graph struct {
+	groups           groups
+	deps             map[string][]string
+	currentGroupName string
+}
+
+// New exported.
+func New() *Graph {
+	return &Graph{
+		groups: make(groups, 0),
+		deps:   make(map[string][]string),
+	}
+}
+
+// After exported.
+func (g Graph) After(t *T, dependencies ...string) {
+	g.deps[g.currentGroupName] = dependencies
+
+	for _, dependsOn := range dependencies {
+		dep := g.groups.get(dependsOn)
+		if dep.status != pass {
+			t.Errorf("skipping '%s' because dependency '%s' has failed", g.currentGroupName, dependsOn)
+			g.groups.get(g.currentGroupName).status = skip
+
+			return
+		}
+	}
+}
+
+// Group exported.
+func (g *Graph) Group(name string) {
+	g.currentGroupName = name
+	g.groups.add(group{
+		name:   name,
+		status: pass,
+		tests:  make([]test, 0),
 	})
+}
 
-	failedProviders := make(map[string]bool)
-
-	for _, a := range all {
-		var hasAFailedProvider bool
-
-		for _, ap := range a.providers {
-			if _, found := failedProviders[ap]; found {
-				hasAFailedProvider = true
-				break
-			}
-		}
-
-		if hasAFailedProvider {
-			a.status = skip
-			continue
-		}
-
-		a := a
-		t.Run(a.name, func(t *testing.T) {
-			a.runFunc(t)
-			if t.Failed() {
-				a.status = fail
-			}
-
-			if a.status == fail && len(a.providers) == 1 {
-				failedProviders[a.providers[0]] = true
-			}
+// Append exported.
+func (g *Graph) Append(t *T, name string, f func(t *T)) {
+	grp := g.groups.get(g.currentGroupName)
+	if t.Failed() || grp.status == skip {
+		grp.tests = append(grp.tests, test{
+			name:   name,
+			status: skip,
 		})
+
+		return
 	}
 
-	return marshal(all...)
+	f(t)
+
+	node := test{
+		name:   name,
+		status: pass,
+	}
+
+	if t.Failed() {
+		grp.status = fail
+		node.status = fail
+	}
+
+	grp.tests = append(grp.tests, node)
+}
+
+// JSON exported.
+func (g Graph) JSON() string {
+	return marshal(g)
 }
