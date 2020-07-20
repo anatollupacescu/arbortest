@@ -8,9 +8,11 @@ import (
 	"strings"
 )
 
-type suite map[string][]string
+type testBundle struct {
+	comment, testName string
+}
 
-func parseSource(src string) suite {
+func parse(src string) []testBundle {
 	fset := token.NewFileSet()
 
 	f, err := parser.ParseFile(fset, "src.go", src, parser.ParseComments)
@@ -19,16 +21,36 @@ func parseSource(src string) suite {
 		log.Fatalf("parse file: %v\n", err)
 	}
 
-	calls := make(map[string][]string)
+	bundles := make([]testBundle, 0)
 
 	for _, decl := range f.Decls {
 		if gen, ok := decl.(*ast.FuncDecl); ok && hasTestSignature(gen) {
-			test := gen.Name.Name
-			calls[test] = providerCalls(gen)
+			testName := gen.Name.Name
+
+			comment := getComment(gen)
+			if comment == "" {
+				continue
+			}
+
+			bundles = append(bundles, testBundle{
+				comment:  comment,
+				testName: testName,
+			})
 		}
 	}
 
-	return suite(calls)
+	return bundles
+}
+
+func getComment(gen *ast.FuncDecl) string {
+	comments := gen.Doc.List
+	if len(comments) != 1 {
+		return ""
+	}
+
+	comment := comments[0]
+
+	return comment.Text
 }
 
 func hasTestSignature(gen *ast.FuncDecl) bool {
@@ -45,10 +67,15 @@ func hasTestSignature(gen *ast.FuncDecl) bool {
 		return false
 	}
 
-	p := params.List[0]
-	if ident, ok := p.Type.(*ast.StarExpr); ok {
+	param := params.List[0]
+
+	return hasCorrectParameterName(param)
+}
+
+func hasCorrectParameterName(field *ast.Field) bool {
+	if ident, ok := field.Type.(*ast.StarExpr); ok {
 		if selector, ok := ident.X.(*ast.SelectorExpr); ok {
-			if selectorX, ok := selector.X.(*ast.Ident); ok && selectorX.Name != "testing" {
+			if selectorX, ok := selector.X.(*ast.Ident); ok && selectorX.Name != "runner" {
 				return false
 			}
 
@@ -57,35 +84,4 @@ func hasTestSignature(gen *ast.FuncDecl) bool {
 	}
 
 	return false
-}
-
-func providerCalls(gen *ast.FuncDecl) (calls []string) {
-	for _, s := range gen.Body.List {
-		f, ok := fromDecl(s)
-		if ok && strings.HasPrefix(f.Name, "provider") {
-			calls = append(calls, f.Name)
-		}
-	}
-
-	return
-}
-
-func fromDecl(s interface{}) (f *ast.Ident, ok bool) {
-	as, ok := s.(*ast.AssignStmt)
-
-	if !ok || len(as.Rhs) != 1 {
-		return nil, false
-	}
-
-	ce, ok := as.Rhs[0].(*ast.CallExpr)
-
-	if !ok {
-		return nil, false
-	}
-
-	if f, ok = ce.Fun.(*ast.Ident); !ok {
-		return nil, false
-	}
-
-	return f, true
 }

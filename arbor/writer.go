@@ -1,95 +1,71 @@
 package arbor
 
 import (
+	"bytes"
 	"fmt"
-	"sort"
+	"log"
 	"strings"
+	"text/template"
 )
 
-const main = `package %s
+const tmpl = `package {{ .Package }}
 
 import (
 	"testing"
 
-	"github.com/anatollupacescu/arbortest/runner"
+	arbor "github.com/anatollupacescu/arbortest/runner"
 )
 
 func TestArbor(t *testing.T) {
-	%s
-	%s
+	g := arbor.New()
+{{ $groups := .Groups }}{{ range $elem := .Order }}
+	t.Run({{printf "%q" $elem}}, func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group({{ printf "%q" $elem }}){{ $testGroup := (index $groups $elem)}}{{ $len := (len $testGroup.Deps) }}{{ if (gt $len 0) }}
+		g.After(at, {{ $testGroup.Deps | commaSep }}){{end}}{{ range $test := $testGroup.Tests}}
+		g.Append(at, {{ printf "%q" $test }}, {{ $test }}){{ end }}
+	})
+{{ end }}
+	output := g.JSON()
 
-	output := runner.Run(t, dependencies, tests)
-
-	if t.Failed() {
-		t.Log("FAIL")
-	}
-
-	runner.Upload(output)
+	arbor.Upload(output)
 }
 `
 
-const dependenciesSrc = `dependencies := map[string][]string{
-		%s,
-	}`
+func commaSep(elems []string) string {
+	quoted := make([]string, 0, len(elems))
+	for _, e := range elems {
+		quoted = append(quoted, fmt.Sprintf("%q", e))
+	}
 
-const testsSrc = `tests := map[string]func(*testing.T) {
-		%s,
-	}`
-
-type dependency struct {
-	testName  string
-	providers []string
+	return strings.Join(quoted, ",")
 }
 
-func (d dependency) String() string {
-	var providers []string = make([]string, len(d.providers))
-
-	for i := range d.providers {
-		str := fmt.Sprintf("\"%s\"", d.providers[i])
-		providers[i] = str
+func generateSource(pkg string, g graph) string {
+	data := struct {
+		Package string
+		Order   []string
+		Groups  map[string]testGroup
+	}{
+		Package: pkg,
+		Order:   g.order,
+		Groups:  g.groups,
 	}
 
-	sort.Slice(providers, func(i, j int) bool {
-		return providers[i] < providers[j]
-	})
-
-	commaSep := strings.Join(providers, ", ")
-
-	return fmt.Sprintf("\"%s\": {%s}", d.testName, commaSep)
-}
-
-func generateSource(pkg string, calls map[string][]string) string {
-	var dependencyList = make([]string, 0, len(calls))
-
-	testList := make([]string, 0, len(calls))
-
-	for testName, providers := range calls {
-		dep := dependency{
-			testName:  testName,
-			providers: providers,
-		}
-		dependencyList = append(dependencyList, dep.String())
-
-		str := fmt.Sprintf("\"%s\": %s", testName, testName)
-		testList = append(testList, str)
+	fmap := template.FuncMap{
+		"commaSep": commaSep,
 	}
 
-	sort.Slice(testList, func(i, j int) bool {
-		return testList[i] < testList[j]
-	})
-	sort.Slice(dependencyList, func(i, j int) bool {
-		return dependencyList[i] < dependencyList[j]
-	})
+	parse, err := template.New("test").Funcs(fmap).Parse(tmpl)
 
-	var tests, deps string
+	tmpl := template.Must(parse, err)
 
-	if len(dependencyList) > 0 {
-		deps = fmt.Sprintf(dependenciesSrc, strings.Join(dependencyList, ", "))
-	} else {
-		deps = "var dependencies map[string][]string"
+	buf := new(bytes.Buffer)
+
+	err = tmpl.Execute(buf, data)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	tests = fmt.Sprintf(testsSrc, strings.Join(testList, ", "))
-
-	return fmt.Sprintf(main, pkg, deps, tests)
+	return buf.String()
 }

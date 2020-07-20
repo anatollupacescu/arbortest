@@ -18,39 +18,55 @@ func TestNoFiles(t *testing.T) {
 	})
 }
 
-func TestNoValidTestsDeclared(t *testing.T) {
-	var src = `package sample
+func TestInvalidSignature(t *testing.T) {
+	t.Run("test name not following convention", func(t *testing.T) {
+		var src = `package sample
 
+func iDontMatter() error {
+	return nil
+}`
+
+		var singleFile = TestFile(src)
+		var singleFileDir = TestDir(func() []arbor.File {
+			return []arbor.File{&singleFile}
+		})
+
+		t.Run("errors", func(t *testing.T) {
+			err := arbor.Generate(&singleFileDir, nil, "test")
+			assert.Equal(t, arbor.ErrNoTestsDeclared, err)
+		})
+	})
+
+	t.Run("bad test parameters", func(t *testing.T) {
+
+		var src = `package sample
+
+// group:a
 func testOld() error {
 	return nil
 }
 `
-	var noTestsFile = TestFile(src)
-	var emptyDir = TestDir(func() []arbor.File {
-		return []arbor.File{&noTestsFile}
-	})
-	var outFile = &TestOutFile{}
+		var wrongSignatureFile = TestFile(src)
+		var singleFileDir = TestDir(func() []arbor.File {
+			return []arbor.File{&wrongSignatureFile}
+		})
+		var outFile = &TestOutFile{}
 
-	t.Run("errors", func(t *testing.T) {
-		err := arbor.Generate(&emptyDir, outFile, "ignored")
-		assert.Equal(t, arbor.ErrNoTestsDeclared, err)
-		assert.Equal(t, "", outFile.contents)
+		t.Run("errors", func(t *testing.T) {
+			err := arbor.Generate(&singleFileDir, outFile, "ignored")
+			assert.Equal(t, arbor.ErrNoTestsDeclared, err)
+			assert.Equal(t, "", outFile.contents)
+		})
 	})
 }
 
-func TestSingle(t *testing.T) {
+func TestSingleTestSingleGroup(t *testing.T) {
 	var src = `package sample
 
-import "testing"
+import "github.com/anatollupacescu/arbortest/runner"
 
-func testOne(t *testing.T) {
-	_ = providerOne()
-	return nil
-}
-
-func providerOne() int {
-	return 0
-}`
+// group:one
+func testOne(t *runner.T) {}`
 
 	var (
 		testProviderFile = TestFile(src)
@@ -60,7 +76,7 @@ func providerOne() int {
 		outFile = &TestOutFile{}
 	)
 
-	t.Run("errors", func(t *testing.T) {
+	t.Run("registers one group", func(t *testing.T) {
 		err := arbor.Generate(&singleFileDir, outFile, "sample")
 		assert.NoError(t, err)
 		expected := `package sample
@@ -68,188 +84,83 @@ func providerOne() int {
 import (
 	"testing"
 
-	"github.com/anatollupacescu/arbortest/runner"
+	arbor "github.com/anatollupacescu/arbortest/runner"
 )
 
 func TestArbor(t *testing.T) {
-	dependencies := map[string][]string{
-		"testOne": {"providerOne"},
-	}
-	tests := map[string]func(*testing.T) {
-		"testOne": testOne,
-	}
+	g := arbor.New()
 
-	output := runner.Run(t, dependencies, tests)
+	t.Run("one", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("one")
+		g.Append(at, "testOne", testOne)
+	})
 
-	if t.Failed() {
-		t.Log("FAIL")
-	}
+	output := g.JSON()
 
-	runner.Upload(output)
+	arbor.Upload(output)
 }
 `
 		assert.Equal(t, expected, outFile.contents)
 	})
 }
 
-func TestCallToInvalidatedProvider(t *testing.T) {
+func TestTwoTestsSameGroup(t *testing.T) {
 	var src = `package random
 
-import "testing"
-
-func testOne(t *testing.T) {
-	_ = providerOne()
-	return nil
-}
-
-func providerOne() int {
-	return 0
-}
-
-func testTwo(t *testing.T) {
-	_ = providerOne()
-	_ = providerTwo()
-	_ = providerThree()
-	return nil
-}
-
-func providerTwo() int {
-	return 0
-}
-
-func providerThree() int {
-	return 0
-}`
-
-	var (
-		testProviderFile = TestFile(src)
-		singleFileDir    = TestDir(func() []arbor.File {
-			return []arbor.File{&testProviderFile}
-		})
-		outFile = &TestOutFile{}
-	)
-
-	t.Run("returns two errors", func(t *testing.T) {
-		err := arbor.Generate(&singleFileDir, outFile, "random")
-		err2, ok := err.(*arbor.ErrInvalidProviderCall)
-		assert.True(t, ok)
-		assert.EqualError(t, err2, `"testTwo" calls invalid provider: "providerTwo"`)
-		assert.Equal(t, "", outFile.contents)
-	})
-}
-
-func TestValidCase(t *testing.T) {
-	var src = `package main
-
-import "testing"
-
-func testOne(t *testing.T) {
-	_ = providerOne()
-	return nil
-}
-
-func providerOne() int {
-	return 0
-}
-
-func testTwo(t *testing.T) {
-	_ = providerTwo()
-	return nil
-}
-
-func providerTwo() int {
-	return 0
-}
-
-func testMain(t *testing.T) {
-	_ = providerOne()
-	_ = providerTwo()
-	return nil
-}
-`
-	var (
-		testProviderFile = TestFile(src)
-		singleFileDir    = TestDir(func() []arbor.File {
-			return []arbor.File{&testProviderFile}
-		})
-		outFile = &TestOutFile{}
-	)
-
-	t.Run("correct file is generated", func(t *testing.T) {
-		err := arbor.Generate(&singleFileDir, outFile, "main")
-		assert.NoError(t, err)
-		expected := `package main
-
 import (
 	"testing"
 
 	"github.com/anatollupacescu/arbortest/runner"
 )
 
+// group:one
+func testOne(t *runner.T) {}
+
+// group:one
+func testTwo(t *runner.T) {}
+`
+
+	var (
+		testProviderFile = TestFile(src)
+		singleFileDir    = TestDir(func() []arbor.File {
+			return []arbor.File{&testProviderFile}
+		})
+		outFile = &TestOutFile{}
+	)
+
+	t.Run("registers one group", func(t *testing.T) {
+		err := arbor.Generate(&singleFileDir, outFile, "sample")
+		assert.NoError(t, err)
+		expected := `package sample
+
+import (
+	"testing"
+
+	arbor "github.com/anatollupacescu/arbortest/runner"
+)
+
 func TestArbor(t *testing.T) {
-	dependencies := map[string][]string{
-		"testMain": {"providerOne", "providerTwo"}, "testOne": {"providerOne"}, "testTwo": {"providerTwo"},
-	}
-	tests := map[string]func(*testing.T) {
-		"testMain": testMain, "testOne": testOne, "testTwo": testTwo,
-	}
+	g := arbor.New()
 
-	output := runner.Run(t, dependencies, tests)
+	t.Run("one", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("one")
+		g.Append(at, "testOne", testOne)
+		g.Append(at, "testTwo", testTwo)
+	})
 
-	if t.Failed() {
-		t.Log("FAIL")
-	}
+	output := g.JSON()
 
-	runner.Upload(output)
+	arbor.Upload(output)
 }
 `
 		assert.Equal(t, expected, outFile.contents)
 	})
 }
 
-func TestValidCaseTwoFiles(t *testing.T) {
-	var src1 = `package main
-
-func testOne(t *testing.T) {
-	_ = providerOne()
-	return nil
-}
-
-func providerOne() int {
-	return 0
-}
-
-func testTwo(t *testing.T) {
-	_ = providerTwo()
-	return nil
-}
-`
-
-	var src2 = `package main
-
-func providerTwo() int {
-	return 0
-}
-
-func testMain(t *testing.T) {
-	_ = providerOne()
-	_ = providerTwo()
-	return nil
-}
-`
-	var (
-		testProviderFile1 = TestFile(src1)
-		testProviderFile2 = TestFile(src2)
-		singleFileDir     = TestDir(func() []arbor.File {
-			return []arbor.File{&testProviderFile1, &testProviderFile2}
-		})
-		outFile = &TestOutFile{}
-	)
-
-	t.Run("it parses both as one", func(t *testing.T) {
-		err := arbor.Generate(&singleFileDir, outFile, "main")
-		assert.NoError(t, err)
-		expected := `package main
+func TestTwoTestsTwoGroups(t *testing.T) {
+	var src = `package random
 
 import (
 	"testing"
@@ -257,21 +168,323 @@ import (
 	"github.com/anatollupacescu/arbortest/runner"
 )
 
+// group:one
+func testOne(t *runner.T) {}
+
+// group:two
+func testTwo(t *runner.T) {}
+`
+
+	var (
+		testProviderFile = TestFile(src)
+		singleFileDir    = TestDir(func() []arbor.File {
+			return []arbor.File{&testProviderFile}
+		})
+		outFile = &TestOutFile{}
+	)
+
+	t.Run("registers one group", func(t *testing.T) {
+		err := arbor.Generate(&singleFileDir, outFile, "sample")
+		assert.NoError(t, err)
+		expected := `package sample
+
+import (
+	"testing"
+
+	arbor "github.com/anatollupacescu/arbortest/runner"
+)
+
 func TestArbor(t *testing.T) {
-	dependencies := map[string][]string{
-		"testMain": {"providerOne", "providerTwo"}, "testOne": {"providerOne"}, "testTwo": {"providerTwo"},
-	}
-	tests := map[string]func(*testing.T) {
-		"testMain": testMain, "testOne": testOne, "testTwo": testTwo,
-	}
+	g := arbor.New()
 
-	output := runner.Run(t, dependencies, tests)
+	t.Run("one", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("one")
+		g.Append(at, "testOne", testOne)
+	})
 
-	if t.Failed() {
-		t.Log("FAIL")
-	}
+	t.Run("two", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("two")
+		g.Append(at, "testTwo", testTwo)
+	})
 
-	runner.Upload(output)
+	output := g.JSON()
+
+	arbor.Upload(output)
+}
+`
+		assert.Equal(t, expected, outFile.contents)
+	})
+}
+
+func TestTwoGroupsWithDependecies(t *testing.T) {
+	var src = `package random
+
+import (
+	"testing"
+
+	"github.com/anatollupacescu/arbortest/runner"
+)
+
+// group:one after:z
+func testOne(t *runner.T) {}
+
+// group:z
+func testNotEmpty(t *runner.T) {}
+`
+
+	var (
+		testProviderFile = TestFile(src)
+		singleFileDir    = TestDir(func() []arbor.File {
+			return []arbor.File{&testProviderFile}
+		})
+		outFile = &TestOutFile{}
+	)
+
+	t.Run("registers two groups in correct order", func(t *testing.T) {
+		err := arbor.Generate(&singleFileDir, outFile, "sample")
+		assert.NoError(t, err)
+		expected := `package sample
+
+import (
+	"testing"
+
+	arbor "github.com/anatollupacescu/arbortest/runner"
+)
+
+func TestArbor(t *testing.T) {
+	g := arbor.New()
+
+	t.Run("z", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("z")
+		g.Append(at, "testNotEmpty", testNotEmpty)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("one")
+		g.After(at, "z")
+		g.Append(at, "testOne", testOne)
+	})
+
+	output := g.JSON()
+
+	arbor.Upload(output)
+}
+`
+		assert.Equal(t, expected, outFile.contents)
+	})
+}
+
+func TestThreeGroupsTwoConnected(t *testing.T) {
+	var src = `package random
+
+import (
+	"testing"
+
+	"github.com/anatollupacescu/arbortest/runner"
+)
+
+// group:one after:z
+func testOne(t *runner.T) {}
+
+// group:z
+func testNotEmpty(t *runner.T) {}
+
+// group:two
+func testTwo(t *runner.T) {}
+`
+
+	var (
+		testProviderFile = TestFile(src)
+		singleFileDir    = TestDir(func() []arbor.File {
+			return []arbor.File{&testProviderFile}
+		})
+		outFile = &TestOutFile{}
+	)
+
+	t.Run("registers two groups in correct order", func(t *testing.T) {
+		err := arbor.Generate(&singleFileDir, outFile, "sample")
+		assert.NoError(t, err)
+		expected := `package sample
+
+import (
+	"testing"
+
+	arbor "github.com/anatollupacescu/arbortest/runner"
+)
+
+func TestArbor(t *testing.T) {
+	g := arbor.New()
+
+	t.Run("two", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("two")
+		g.Append(at, "testTwo", testTwo)
+	})
+
+	t.Run("z", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("z")
+		g.Append(at, "testNotEmpty", testNotEmpty)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("one")
+		g.After(at, "z")
+		g.Append(at, "testOne", testOne)
+	})
+
+	output := g.JSON()
+
+	arbor.Upload(output)
+}
+`
+		assert.Equal(t, expected, outFile.contents)
+	})
+}
+
+func TestThreeGroupsAllConnected(t *testing.T) {
+	var src = `package random
+
+import (
+	"testing"
+
+	"github.com/anatollupacescu/arbortest/runner"
+)
+
+// group:one after:z
+func testOne(t *runner.T) {}
+
+// group:z
+func testNotEmpty(t *runner.T) {}
+
+// group:two after:one
+func testTwo(t *runner.T) {}
+`
+
+	var (
+		testProviderFile = TestFile(src)
+		singleFileDir    = TestDir(func() []arbor.File {
+			return []arbor.File{&testProviderFile}
+		})
+		outFile = &TestOutFile{}
+	)
+
+	t.Run("registers two groups in correct order", func(t *testing.T) {
+		err := arbor.Generate(&singleFileDir, outFile, "sample")
+		assert.NoError(t, err)
+		expected := `package sample
+
+import (
+	"testing"
+
+	arbor "github.com/anatollupacescu/arbortest/runner"
+)
+
+func TestArbor(t *testing.T) {
+	g := arbor.New()
+
+	t.Run("z", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("z")
+		g.Append(at, "testNotEmpty", testNotEmpty)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("one")
+		g.After(at, "z")
+		g.Append(at, "testOne", testOne)
+	})
+
+	t.Run("two", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("two")
+		g.After(at, "one")
+		g.Append(at, "testTwo", testTwo)
+	})
+
+	output := g.JSON()
+
+	arbor.Upload(output)
+}
+`
+		assert.Equal(t, expected, outFile.contents)
+	})
+}
+
+func TestTwoFiles(t *testing.T) {
+	var src1 = `package random
+
+import (
+	"testing"
+
+	"github.com/anatollupacescu/arbortest/runner"
+)
+
+// group:one
+func testOne(t *runner.T) {}
+
+// group:two
+func testTwo(t *runner.T) {}
+`
+
+	var src2 = `package random
+
+import (
+	"testing"
+
+	"github.com/anatollupacescu/arbortest/runner"
+)
+
+// group:one after:two
+func testThree(t *runner.T) {}
+`
+
+	var (
+		file1      = TestFile(src1)
+		file2      = TestFile(src2)
+		twoFileDir = TestDir(func() []arbor.File {
+			return []arbor.File{&file1, &file2}
+		})
+		outFile = &TestOutFile{}
+	)
+
+	t.Run("parses both files", func(t *testing.T) {
+		err := arbor.Generate(&twoFileDir, outFile, "sample")
+		assert.NoError(t, err)
+		expected := `package sample
+
+import (
+	"testing"
+
+	arbor "github.com/anatollupacescu/arbortest/runner"
+)
+
+func TestArbor(t *testing.T) {
+	g := arbor.New()
+
+	t.Run("two", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("two")
+		g.Append(at, "testTwo", testTwo)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		at := arbor.NewT(t)
+		g.Group("one")
+		g.After(at, "two")
+		g.Append(at, "testOne", testOne)
+		g.Append(at, "testThree", testThree)
+	})
+
+	output := g.JSON()
+
+	arbor.Upload(output)
 }
 `
 		assert.Equal(t, expected, outFile.contents)
