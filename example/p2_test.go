@@ -1,18 +1,17 @@
 package example
 
 import (
-	"testing"
+	"github.com/anatollupacescu/arbortest/runner"
 )
 
-func testTwo(t *testing.T) {
-	_ = providerTwo()
+// group:two
+func test1GroupTwo(t *runner.T) {
 }
 
-func providerTwo() int {
-	return 0
+// group:two
+func test2GroupTwo(t *runner.T) {
 }
 
-func testMain(t *testing.T) {
-	_ = providerOne()
-	_ = providerTwo()
+// group:two
+func test3GroupTwo(t *runner.T) {
 }

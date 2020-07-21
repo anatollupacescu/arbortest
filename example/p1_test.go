@@ -1,13 +1,13 @@
 package example
 
 import (
-	"testing"
+	"github.com/anatollupacescu/arbortest/runner"
 )
 
-func testOne(t *testing.T) {
-	_ = providerOne()
+// group:one after:two
+func testOne(t *runner.T) {
 }
 
-func providerOne() int {
-	return 0
+// group:z after:one,two
+func testNotEmpty(t *runner.T) {
 }
