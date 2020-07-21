@@ -1,6 +1,9 @@
 package runner
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"log"
+)
 
 type node struct {
 	ID     string `json:"id"`
@@ -28,7 +31,9 @@ func (o *output) Node(n node) {
 	if _, isPresent := o.nodes[n]; isPresent {
 		return
 	}
+
 	o.Nodes = append(o.Nodes, n)
+
 	o.nodes[n] = struct{}{}
 }
 
@@ -36,7 +41,9 @@ func (o *output) Link(l link) {
 	if _, isPresent := o.links[l]; isPresent {
 		return
 	}
+
 	o.Links = append(o.Links, l)
+
 	o.links[l] = struct{}{}
 }
 
@@ -46,13 +53,12 @@ func marshal(g Graph) string {
 	statuses := []string{"skip", "fail", "pass"}
 
 	out := output{
-		Nodes: make([]node, 0),
-		Links: make([]link, 0),
 		nodes: make(map[node]struct{}),
 		links: make(map[link]struct{}),
 	}
 
-	for _, grp := range g.groups {
+	for i := range g.groups {
+		grp := g.groups[i]
 		groupNode := node{
 			ID:     grp.name,
 			Group:  grp.status,
@@ -83,12 +89,12 @@ func marshal(g Graph) string {
 		targetGroups := g.deps[fromGroupName]
 
 		source := fromGroupName + "-ext"
-		status := g.groups.get(fromGroupName).status
+		groupStatus := g.groups.get(fromGroupName).status
 
 		testNode := node{
 			ID:     source,
-			Group:  status,
-			Status: statuses[status],
+			Group:  groupStatus,
+			Status: statuses[groupStatus],
 		}
 		out.Node(testNode)
 
@@ -101,11 +107,11 @@ func marshal(g Graph) string {
 
 		for _, destinationGroupName := range targetGroups {
 			destination := destinationGroupName + "-ext"
-			status := g.groups.get(fromGroupName).status
+			groupStatus := g.groups.get(fromGroupName).status
 			testNode := node{
 				ID:     destination,
-				Group:  status,
-				Status: statuses[status],
+				Group:  groupStatus,
+				Status: statuses[groupStatus],
 			}
 			out.Node(testNode)
 
@@ -125,7 +131,10 @@ func marshal(g Graph) string {
 		}
 	}
 
-	data, _ := json.Marshal(out)
+	data, err := json.Marshal(out)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return string(data)
 }

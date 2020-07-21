@@ -9,12 +9,6 @@ import (
 	"github.com/anatollupacescu/arbortest/runner"
 )
 
-func TestInitial(t *testing.T) {
-	r := runner.New()
-	json := r.JSON()
-	assert.Equal(t, `{"nodes":[],"links":[]}`, json)
-}
-
 func TestSingleAppend(t *testing.T) {
 	rt := runner.NewT(t)
 	r := runner.New()
@@ -96,8 +90,7 @@ func TestAfterCreatesLink(t *testing.T) {
 	r.Group("group")
 	r.Append(rt, "test", func(*runner.T) {})
 	r.Append(rt, "test2", func(*runner.T) {})
-	// mock := &fakeT{}
-	// at2 := arbor.NewT(mock)
+
 	r.Group("group2")
 	r.After(rt, "group")
 	r.Append(rt, "test", func(*runner.T) {})
@@ -128,16 +121,17 @@ func TestAfterCreatesLink(t *testing.T) {
 }
 
 func TestAfterFailedGroup(t *testing.T) {
+	r := runner.New()
+
 	mock := &fakeT{}
 	rt := runner.NewT(mock)
-	r := runner.New()
 	r.Group("group")
 	r.Append(rt, "test", func(*runner.T) {})
 	r.Append(rt, "test2", func(at *runner.T) { at.Error("stop here") })
 
-	r.Group("group2")
 	mock = &fakeT{}
 	rt = runner.NewT(mock)
+	r.Group("group2")
 	r.After(rt, "group")
 	r.Append(rt, "test", func(*runner.T) {})
 	r.Append(rt, "test2", func(*runner.T) {})

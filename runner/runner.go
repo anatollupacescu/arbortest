@@ -59,6 +59,7 @@ func (g Graph) After(t *T, dependencies ...string) {
 		dep := g.groups.get(dependsOn)
 		if dep.status != pass {
 			t.Errorf("skipping '%s' because dependency '%s' has failed", g.currentGroupName, dependsOn)
+
 			g.groups.get(g.currentGroupName).status = skip
 
 			return
@@ -72,7 +73,6 @@ func (g *Graph) Group(name string) {
 	g.groups.add(group{
 		name:   name,
 		status: pass,
-		tests:  make([]test, 0),
 	})
 }
 
