@@ -39,8 +39,8 @@ func main() {
 // FsDir represents a filesystem directory.
 type FsDir string
 
-// ListTestFiles ioutil based implementation for listing 'test' files in a directory.
-func (d *FsDir) ListTestFiles() (out []arbor.File) {
+// List ioutil based implementation for listing 'test' files in a directory.
+func (d *FsDir) List() (out []arbor.File) {
 	files, err := ioutil.ReadDir(string(*d))
 	if err != nil {
 		log.Fatalf("list test files in current directory: %v", err)
@@ -60,8 +60,8 @@ func (d *FsDir) ListTestFiles() (out []arbor.File) {
 // FsFile represents a filesystem file.
 type FsFile string
 
-// ReadContents ioutil based implementation for reading contents of a file from the disk.
-func (f *FsFile) ReadContents() string {
+// Read ioutil based implementation for reading contents of a file from the disk.
+func (f *FsFile) Read() string {
 	name := string(*f)
 
 	fileBytes, err := ioutil.ReadFile(filepath.Clean(name))
@@ -77,8 +77,8 @@ type FsOutFile struct {
 	name, location string
 }
 
-// WriteContents ioutil based implementation for writing contents to disk.
-func (f *FsOutFile) WriteContents(contents string) error {
+// Write ioutil based implementation for writing contents to disk.
+func (f *FsOutFile) Write(contents string) error {
 	destination := path.Join(f.location, f.name)
 	if err := ioutil.WriteFile(destination, []byte(contents), 0600); err != nil {
 		return fmt.Errorf("generate test file %q: %w", f.name, err)

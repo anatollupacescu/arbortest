@@ -3,6 +3,8 @@ package main_test
 import (
 	"os/exec"
 	"testing"
+
+	"github.com/anatollupacescu/arbortest/runner"
 )
 
 const generatedFileName = "generated_test.go"
@@ -29,35 +31,6 @@ func tearDown(t *testing.T) {
 	}
 }
 
-func testOne(t *testing.T) {
-	_ = providerOne()
-}
-
-func providerOne() int {
-	return 0
-}
-
-func testTwo(t *testing.T) {
-	_ = providerTwo()
-}
-
-func providerTwo() int {
-	return 0
-}
-
-func testMain(t *testing.T) {
-	_ = providerOne()
-	_ = providerTwo()
-}
-
-func TestIntegrationListTestFiles(t *testing.T) {
-	t.Skip() //TODO implementation pending
-}
-
-func TestIntegrationReadContents(t *testing.T) {
-	t.Skip() //TODO implementation pending
-}
-
-func TestIntegrationWriteContents(t *testing.T) {
-	t.Skip() //TODO implementation pending
+// group:one
+func testOne(t *runner.T) {
 }

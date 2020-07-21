@@ -7,15 +7,15 @@ import (
 type (
 	// File contract for reading test source.
 	File interface {
-		ReadContents() string
+		Read() string
 	}
 	// Dir contract for listing parseable files from a given directory.
 	Dir interface {
-		ListTestFiles() (out []File)
+		List() []File
 	}
 	// OutFile contract for writing generated contents to output.
 	OutFile interface {
-		WriteContents(contents string) error
+		Write(contents string) error
 	}
 )
 
@@ -28,7 +28,7 @@ var (
 
 // Generate takes a folder and produces a test file for that package.
 func Generate(dir Dir, out OutFile, pkg string) error {
-	var testFiles = dir.ListTestFiles()
+	var testFiles = dir.List()
 	if len(testFiles) == 0 {
 		return ErrNoTestFilesFound
 	}
@@ -43,7 +43,7 @@ func Generate(dir Dir, out OutFile, pkg string) error {
 	}
 
 	output := generateSource(pkg, graph)
-	if err := out.WriteContents(output); err != nil {
+	if err := out.Write(output); err != nil {
 		return err
 	}
 
@@ -54,7 +54,7 @@ func buildGraph(testFiles []File) (graph, error) {
 	bundles := make([]testBundle, 0)
 
 	for _, fileName := range testFiles {
-		source := fileName.ReadContents()
+		source := fileName.Read()
 		newBundles := parse(source)
 		bundles = append(bundles, newBundles...)
 	}

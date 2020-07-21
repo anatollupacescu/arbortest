@@ -494,13 +494,13 @@ func TestArbor(t *testing.T) {
 //helpers
 type TestDir func() []arbor.File
 
-func (t *TestDir) ListTestFiles() (out []arbor.File) {
+func (t *TestDir) List() (out []arbor.File) {
 	return (*t)()
 }
 
 type TestFile string
 
-func (t *TestFile) ReadContents() string {
+func (t *TestFile) Read() string {
 	return string(*t)
 }
 
@@ -509,7 +509,7 @@ type TestOutFile struct {
 	err      error
 }
 
-func (t *TestOutFile) WriteContents(contents string) error {
+func (t *TestOutFile) Write(contents string) error {
 	t.contents = contents
 	return t.err
 }

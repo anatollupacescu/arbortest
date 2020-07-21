@@ -21,7 +21,7 @@ func parse(src string) []testBundle {
 		log.Fatalf("parse file: %v\n", err)
 	}
 
-	bundles := make([]testBundle, 0)
+	var bundles []testBundle
 
 	for _, decl := range f.Decls {
 		if gen, ok := decl.(*ast.FuncDecl); ok && hasTestSignature(gen) {
