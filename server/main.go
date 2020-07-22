@@ -15,7 +15,7 @@ func init() {
 	log.SetPrefix("» ")
 }
 
-//nolint:gochecknoglobals	//idiomatic way of working with flags in Go
+//nolint:gochecknoglobals	idiomatic way of working with flags in Go
 var port = flag.Int("port", 3000, "port to listen to")
 
 func main() {
