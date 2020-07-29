@@ -9,7 +9,7 @@ import (
 )
 
 //nolint:gochecknoglobals	//idiomatic way of working with flags in Go
-var uri = flag.String("uri", "", "arbor server url")
+var uri = flag.String("arborURL", "", "arbor server url")
 
 // Upload sends the graph json to the UI server.
 func Upload(data string) {

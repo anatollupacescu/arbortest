@@ -14,6 +14,10 @@ then start the UI server
 
 and run the tests
 
-> go test -v ./example/... -args --uri=<http://localhost:3000/data.json>
+> go test -v ./example/... -args --arborURL=<http://localhost:3000/data.json>
 
 to check the result go to <http://localhost:3000>
+
+## to install locally the server binary
+
+> make install
