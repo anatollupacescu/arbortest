@@ -17,7 +17,7 @@ func init() {
 	log.SetPrefix("» ")
 }
 
-//nolint:gochecknoglobals	idiomatic way of working with flags in Go
+//nolint:gochecknoglobals // idiomatic way of working with flags in Go
 var port = flag.Int("port", 3000, "port to listen to")
 
 func main() {
@@ -34,7 +34,7 @@ func run() error {
 	http.Handle("/", dir)
 
 	portStr := fmt.Sprintf(":%d", *port)
-	log.Printf("listening on port! %s", portStr)
+	log.Printf("listening on port %s", portStr)
 
 	return http.ListenAndServe(portStr, nil)
 }
