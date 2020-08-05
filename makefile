@@ -12,9 +12,14 @@ $(ARBOR_SERVER): $(PACKR_TOOL)
 	GO111MODULE=on $(PACKR_TOOL) install
 	GO111MODULE=on $(PACKR_TOOL) clean
 
+.PHONY: clean-server
+
+clean-server:
+	@rm $(ARBOR_SERVER)
+
 .PHONY: install-server
 
-install-server: $(ARBOR_SERVER)
+install-server: $(ARBOR_SERVER) 
 
 ARBOR_GEN ?= $(BIN_DIR)/arborgen
 

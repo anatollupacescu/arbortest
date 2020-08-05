@@ -1,0 +1,12 @@
+{
+  "version": 3,
+  "file": "bundle.css",
+  "sources": [
+    "../App.svelte"
+  ],
+  "sourcesContent": [
+    "<svelte:head>\n\t<link rel=\"stylesheet\" href=\"font-awesome.min.css\">\n\t<link rel=\"stylesheet\" href=\"wireframe.css\">\n</svelte:head>\n\n<style>\n.chart {\n\twidth: 100%;\n\theight: calc(100% - 4em);\n\tmin-height: 280px;\n\tmargin: 0 auto;\n}\n</style>\n\n<script>\n\timport Graph from './Graph.svelte';\n\timport Sidepanel from './Sidepanel.svelte';\n</script>\n\n<div>\n\t<div class=\"container-fluid h-100\">\n\t  <div class=\"row h-100\">\n\t\t<div class=\"col-md-10\">\n\t\t\t<div class=\"chart\">\n\t\t\t\t<Graph />\n\t\t\t</div>\n\t\t</div>\n\t\t<div class=\"col-md-2\">\n\t\t  <div class=\"col-md-12\" >\n\t\t\t\t<Sidepanel />\n\t\t  </div>\n\t\t</div>\n\t  </div>\n\t</div>\n  </div>"
+  ],
+  "names": [],
+  "mappings": "AAMA,MAAM,cAAC,CAAC,AACP,KAAK,CAAE,IAAI,CACX,MAAM,CAAE,KAAK,IAAI,CAAC,CAAC,CAAC,GAAG,CAAC,CACxB,UAAU,CAAE,KAAK,CACjB,MAAM,CAAE,CAAC,CAAC,IAAI,AACf,CAAC"
+}

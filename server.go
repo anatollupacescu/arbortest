@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-
-	"github.com/gobuffalo/packr/v2"
 )
 
 func init() {
@@ -27,11 +25,45 @@ func main() {
 }
 
 func run() error {
-	http.HandleFunc("/data.json", dataFunc)
+	b := &broker{
+		make(map[stringChan]struct{}),
+		make(chan (stringChan)),
+		make(chan (stringChan)),
+		make(stringChan),
+	}
 
-	box := packr.New("demo", "./public")
-	dir := http.FileServer(box)
-	http.Handle("/", dir)
+	go b.listen()
+
+	http.Handle("/events/", b)
+
+	http.HandleFunc("/data/", func(w http.ResponseWriter, r *http.Request) {
+		enableCors(&w)
+
+		if r.Method != "POST" {
+			http.Error(w, "only post", http.StatusMethodNotAllowed)
+
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+		bts, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+			return
+		}
+
+		defer func() {
+			_ = r.Body.Close()
+		}()
+
+		b.messages <- string(bts)
+	})
+
+	// box := packr.New("demo", "./public")
+	// dir := http.FileServer(box)
+	// http.Handle("/", dir)
 
 	portStr := fmt.Sprintf(":%d", *port)
 	log.Printf("listening on port %s", portStr)
@@ -39,30 +71,6 @@ func run() error {
 	return http.ListenAndServe(portStr, nil)
 }
 
-//nolint:gochecknoglobals	//simplest way to persist graph data
-var data = `{
-	"nodes": [{"id": "No tests ran yet", "status": "pending"}],
-	"links": []
-}`
-
-func dataFunc(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		fmt.Fprint(w, data)
-
-		return
-	}
-
-	bts, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-
-		return
-	}
-
-	defer func() {
-		_ = r.Body.Close()
-	}()
-
-	data = string(bts)
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }

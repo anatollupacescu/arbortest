@@ -56,26 +56,26 @@ func TestTwoGrops(t *testing.T) {
 	rt := runner.NewT(t)
 	r := runner.New()
 	r.Group("group")
-	r.Append(rt, "test", func(*runner.T) {})
+	r.Append(rt, "test1", func(*runner.T) {})
 	r.Append(rt, "test2", func(*runner.T) {})
 
 	r.Group("group2")
-	r.Append(rt, "test", func(*runner.T) {})
-	r.Append(rt, "test2", func(*runner.T) {})
+	r.Append(rt, "test3", func(*runner.T) {})
+	r.Append(rt, "test4", func(*runner.T) {})
 
 	json := `{"nodes":[
 		{"id": "group", "group":2, "status":"pass"},
-		{"id": "test",  "group":2, "status":"pass"},
+		{"id": "test1",  "group":2, "status":"pass"},
 		{"id": "test2",  "group":2, "status":"pass"},
 		{"id": "group2", "group":2, "status":"pass"},
-		{"id": "test",  "group":2, "status":"pass"},
-		{"id": "test2",  "group":2, "status":"pass"}
+		{"id": "test3",  "group":2, "status":"pass"},
+		{"id": "test4",  "group":2, "status":"pass"}
 	], 
 	"links":[
-		{"source": "test","target": "group","value": 3},
+		{"source": "test1","target": "group","value": 3},
 		{"source": "test2","target": "group","value": 3},
-		{"source": "test","target": "group2","value": 3},
-		{"source": "test2","target": "group2","value": 3}
+		{"source": "test3","target": "group2","value": 3},
+		{"source": "test4","target": "group2","value": 3}
 	]}`
 
 	json = strings.ReplaceAll(json, "\t", "")
