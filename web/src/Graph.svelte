@@ -68,7 +68,6 @@
 
   onMount(() => {
     height = width = window.innerHeight;
-    // width = document.querySelector(".chart").clientWidth;
 
     svg = d3
       .select(".chart")

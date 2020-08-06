@@ -2,7 +2,7 @@
 	"commit": "o3zse30",
 	"message": "something new",
 	"nodes":[
-		{"id": "group","status":"pass"},
+		{"id": "group1","status":"pass"},
 		{"id": "test1","status":"pass"},
 		{"id": "test2","status":"pass"},
 		{"id": "group2","status":"fail"},
@@ -10,9 +10,9 @@
 		{"id": "test4","status":"skip"}
 	],
 	"links":[
-		{"source": "test1","target": "group","value": 3},
-		{"source": "test2","target": "group","value": 3},
-		{"source": "test3","target": "group2","value": 3},
-		{"source": "test4","target": "group2","value": 3},
-		{"source": "group","target": "group2","value": 3}
+		{"source": "test1","target": "group1","value": 1},
+		{"source": "test2","target": "group1","value": 1},
+		{"source": "test3","target": "group2","value": 1},
+		{"source": "test4","target": "group2","value": 1},
+		{"source": "group2","target": "group1","value": 3}
 ]}

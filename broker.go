@@ -42,7 +42,7 @@ func (b *broker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.newClients <- messageChan
 
 	go func() {
-		<-w.(http.CloseNotifier).CloseNotify()
+		<-r.Context().Done()
 		b.defunctClients <- messageChan
 	}()
 

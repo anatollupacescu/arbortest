@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 func init() {
@@ -36,16 +37,24 @@ func run() error {
 
 	http.Handle("/events/", b)
 
+	graphs := make([]string, 0)
+
 	http.HandleFunc("/data/", func(w http.ResponseWriter, r *http.Request) {
 		enableCors(&w)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-		if r.Method != "POST" {
-			http.Error(w, "only post", http.StatusMethodNotAllowed)
+		if r.Method == "GET" {
+			jsonData := strings.Join(graphs, ",")
+			fmt.Fprintf(w, "[%s]", jsonData)
 
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		if r.Method != "POST" {
+			http.Error(w, "only GET and POST methods expected", http.StatusMethodNotAllowed)
+
+			return
+		}
 
 		bts, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -58,7 +67,9 @@ func run() error {
 			_ = r.Body.Close()
 		}()
 
-		b.messages <- string(bts)
+		graph := string(bts)
+		graphs = append([]string{graph}, graphs...)
+		b.messages <- graph
 	})
 
 	// box := packr.New("demo", "./public")

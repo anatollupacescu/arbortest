@@ -5395,7 +5395,7 @@ var app = (function () {
     		c: function create() {
     			div = element("div");
     			attr_dev(div, "class", "chartdiv");
-    			add_location(div, file, 199, 0, 4843);
+    			add_location(div, file, 198, 0, 4782);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -5475,10 +5475,7 @@ var app = (function () {
 
     	onMount(() => {
     		height = width = window.innerHeight;
-
-    		// width = document.querySelector(".chart").clientWidth;
     		svg = d3.select(".chart").append("svg").attr("width", width).attr("height", height);
-
     		fetch("http://localhost:3000/data/").then(d => d.json()).then(d => store.update(() => d));
     	});
 
