@@ -16,11 +16,11 @@ func TestSingleAppend(t *testing.T) {
 	r.Append(rt, "test", func(*runner.T) {})
 
 	json := `{"nodes":[
-		{"id": "group", "group":2, "status":"pass"},
-		{"id": "test",  "group":2, "status":"pass"}
+		{"id": "group", "status":"pass"},
+		{"id": "test",  "status":"pass"}
 	], 
 	"links":[
-		{"source": "test","target": "group","value": 3}
+		{"source": "test","target": "group","value": 1}
 	]}`
 
 	json = strings.ReplaceAll(json, "\t", "")
@@ -37,13 +37,13 @@ func TestTwoAppend(t *testing.T) {
 	r.Append(rt, "test2", func(*runner.T) {})
 
 	json := `{"nodes":[
-		{"id": "group", "group":2, "status":"pass"},
-		{"id": "test",  "group":2, "status":"pass"},
-		{"id": "test2",  "group":2, "status":"pass"}
+		{"id": "group", "status":"pass"},
+		{"id": "test",  "status":"pass"},
+		{"id": "test2",  "status":"pass"}
 	], 
 	"links":[
-		{"source": "test","target": "group","value": 3},
-		{"source": "test2","target": "group","value": 3}
+		{"source": "test","target": "group","value": 1},
+		{"source": "test2","target": "group","value": 1}
 	]}`
 
 	json = strings.ReplaceAll(json, "\t", "")
@@ -64,18 +64,18 @@ func TestTwoGrops(t *testing.T) {
 	r.Append(rt, "test4", func(*runner.T) {})
 
 	json := `{"nodes":[
-		{"id": "group", "group":2, "status":"pass"},
-		{"id": "test1",  "group":2, "status":"pass"},
-		{"id": "test2",  "group":2, "status":"pass"},
-		{"id": "group2", "group":2, "status":"pass"},
-		{"id": "test3",  "group":2, "status":"pass"},
-		{"id": "test4",  "group":2, "status":"pass"}
+		{"id": "group", "status":"pass"},
+		{"id": "test1", "status":"pass"},
+		{"id": "test2", "status":"pass"},
+		{"id": "group2","status":"pass"},
+		{"id": "test3", "status":"pass"},
+		{"id": "test4", "status":"pass"}
 	], 
 	"links":[
-		{"source": "test1","target": "group","value": 3},
-		{"source": "test2","target": "group","value": 3},
-		{"source": "test3","target": "group2","value": 3},
-		{"source": "test4","target": "group2","value": 3}
+		{"source": "test1","target": "group","value": 1},
+		{"source": "test2","target": "group","value": 1},
+		{"source": "test3","target": "group2","value": 1},
+		{"source": "test4","target": "group2","value": 1}
 	]}`
 
 	json = strings.ReplaceAll(json, "\t", "")
@@ -97,22 +97,20 @@ func TestAfterCreatesLink(t *testing.T) {
 	r.Append(rt, "test2", func(*runner.T) {})
 
 	json := `{"nodes":[
-		{"id":"group","group":2,"status":"pass"},
-		{"id":"test","group":2,"status":"pass"},
-		{"id":"test2","group":2,"status":"pass"},
-		{"id":"group2","group":2,"status":"pass"},
-		{"id":"test","group":2,"status":"pass"},
-		{"id":"test2","group":2,"status":"pass"},
-		{"id":"group2-ext","group":2,"status":"pass"},
-		{"id":"group-ext","group":2,"status":"pass"}],
+		{"id":"group",	"status":"pass"},
+		{"id":"test",	"status":"pass"},
+		{"id":"test2",	"status":"pass"},
+		{"id":"group2",	"status":"pass"},
+		{"id":"test",	"status":"pass"},
+		{"id":"test2",	"status":"pass"}
+	],
 	"links":[
-		{"source":"test","target":"group","value":3},
-		{"source":"test2","target":"group","value":3},
-		{"source":"test","target":"group2","value":3},
-		{"source":"test2","target":"group2","value":3},
-		{"source":"group2-ext","target":"group2","value":3},
-		{"source":"group2-ext","target":"group-ext","value":3},
-		{"source":"group-ext","target":"group","value":3}]}`
+		{"source":"test","target":"group","value":1},
+		{"source":"test2","target":"group","value":1},
+		{"source":"test","target":"group2","value":1},
+		{"source":"test2","target":"group2","value":1},
+		{"source":"group2","target":"group","value":3}
+	]}`
 
 	json = strings.ReplaceAll(json, "\t", "")
 	json = strings.ReplaceAll(json, "\n", "")
@@ -137,22 +135,20 @@ func TestAfterFailedGroup(t *testing.T) {
 	r.Append(rt, "test2", func(*runner.T) {})
 
 	json := `{"nodes":[
-		{"id":"group","group":1,"status":"fail"},
-		{"id":"test","group":2,"status":"pass"},
-		{"id":"test2","group":1,"status":"fail"},
-		{"id":"group2","group":0,"status":"skip"},
-		{"id":"test","group":0,"status":"skip"},
-		{"id":"test2","group":0,"status":"skip"},
-		{"id":"group2-ext","group":0,"status":"skip"},
-		{"id":"group-ext","group":0,"status":"skip"}],
+		{"id":"group",	"status":"fail"},
+		{"id":"test",	"status":"pass"},
+		{"id":"test2",	"status":"fail"},
+		{"id":"group2",	"status":"skip"},
+		{"id":"test",	"status":"skip"},
+		{"id":"test2",	"status":"skip"}
+	],
 	"links":[
-		{"source":"test","target":"group","value":3},
-		{"source":"test2","target":"group","value":3},
-		{"source":"test","target":"group2","value":3},
-		{"source":"test2","target":"group2","value":3},
-		{"source":"group2-ext","target":"group2","value":3},
-		{"source":"group2-ext","target":"group-ext","value":3},
-		{"source":"group-ext","target":"group","value":3}]}`
+		{"source":"test","target":"group","value":1},
+		{"source":"test2","target":"group","value":1},
+		{"source":"test","target":"group2","value":1},
+		{"source":"test2","target":"group2","value":1},
+		{"source":"group2","target":"group","value":3}
+	]}`
 
 	json = strings.ReplaceAll(json, "\t", "")
 	json = strings.ReplaceAll(json, "\n", "")

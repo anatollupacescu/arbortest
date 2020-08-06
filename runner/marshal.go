@@ -3,11 +3,12 @@ package runner
 import (
 	"encoding/json"
 	"log"
+	"os/exec"
+	"strings"
 )
 
 type node struct {
 	ID     string `json:"id"`
-	Group  status `json:"group"`
 	Status string `json:"status"`
 
 	groupName string
@@ -20,8 +21,10 @@ type link struct {
 }
 
 type output struct {
-	Nodes []node `json:"nodes"`
-	Links []link `json:"links"`
+	Commit  string `json:"commit"`
+	Message string `json:"message"`
+	Nodes   []node `json:"nodes"`
+	Links   []link `json:"links"`
 
 	nodes map[node]struct{}
 	links map[link]struct{}
@@ -47,21 +50,25 @@ func (o *output) Link(l link) {
 	o.links[l] = struct{}{}
 }
 
-const defaultLinkNodeValue = 3
+const (
+	betweenTests  = 1
+	betweenGroups = 3
+)
 
 func marshal(g Graph) string {
 	statuses := []string{"skip", "fail", "pass"}
 
 	out := output{
-		nodes: make(map[node]struct{}),
-		links: make(map[link]struct{}),
+		Commit:  "unknown",
+		Message: "unknown",
+		nodes:   make(map[node]struct{}),
+		links:   make(map[link]struct{}),
 	}
 
 	for i := range g.groups {
 		grp := g.groups[i]
 		groupNode := node{
 			ID:     grp.name,
-			Group:  grp.status,
 			Status: statuses[grp.status],
 		}
 
@@ -70,16 +77,15 @@ func marshal(g Graph) string {
 		for _, tst := range grp.tests {
 			testNode := node{
 				ID:        tst.name,
-				Group:     tst.status,
-				groupName: grp.name,
 				Status:    statuses[tst.status],
+				groupName: grp.name,
 			}
 			out.Node(testNode)
 
 			linkNode := link{
 				Source: tst.name,
 				Target: grp.name,
-				Value:  defaultLinkNodeValue,
+				Value:  betweenTests,
 			}
 			out.Link(linkNode)
 		}
@@ -88,48 +94,19 @@ func marshal(g Graph) string {
 	for fromGroupName := range g.deps {
 		targetGroups := g.deps[fromGroupName]
 
-		source := fromGroupName + "-ext"
-		groupStatus := g.groups.get(fromGroupName).status
-
-		testNode := node{
-			ID:     source,
-			Group:  groupStatus,
-			Status: statuses[groupStatus],
-		}
-		out.Node(testNode)
-
-		linkNode := link{
-			Source: source,
-			Target: fromGroupName,
-			Value:  defaultLinkNodeValue,
-		}
-		out.Link(linkNode)
-
 		for _, destinationGroupName := range targetGroups {
-			destination := destinationGroupName + "-ext"
-			groupStatus := g.groups.get(fromGroupName).status
-			testNode := node{
-				ID:     destination,
-				Group:  groupStatus,
-				Status: statuses[groupStatus],
-			}
-			out.Node(testNode)
-
 			linkNode := link{
-				Source: source,
-				Target: destination,
-				Value:  defaultLinkNodeValue,
+				Source: fromGroupName,
+				Target: destinationGroupName,
+				Value:  betweenGroups,
 			}
 			out.Link(linkNode)
-
-			extToHome := link{
-				Source: destination,
-				Target: destinationGroupName,
-				Value:  defaultLinkNodeValue,
-			}
-			out.Link(extToHome)
 		}
 	}
+
+	commit, message := commitAndMessage()
+	out.Message = message
+	out.Commit = commit
 
 	data, err := json.Marshal(out)
 	if err != nil {
@@ -137,4 +114,24 @@ func marshal(g Graph) string {
 	}
 
 	return string(data)
+}
+
+func commitAndMessage() (commit string, message string) {
+	out, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
+	if err != nil {
+		return
+	}
+
+	commit = string(out)
+	commit = strings.TrimRight(commit, "\n")
+
+	out, err = exec.Command("git", "show-branch", "--no-name", "HEAD").Output()
+	if err != nil {
+		log.Fatal("online ", err)
+	}
+
+	message = string(out)
+	message = strings.TrimRight(message, "\n")
+
+	return
 }
