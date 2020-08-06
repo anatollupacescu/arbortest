@@ -5395,7 +5395,7 @@ var app = (function () {
     		c: function create() {
     			div = element("div");
     			attr_dev(div, "class", "chartdiv");
-    			add_location(div, file, 194, 0, 4686);
+    			add_location(div, file, 199, 0, 4843);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -5478,11 +5478,15 @@ var app = (function () {
 
     		// width = document.querySelector(".chart").clientWidth;
     		svg = d3.select(".chart").append("svg").attr("width", width).attr("height", height);
+
+    		fetch("http://localhost:3000/data/").then(d => d.json()).then(d => store.update(() => d));
     	});
 
     	function renderGraph(nodes, links) {
-    		simulation = d3.forceSimulation(nodes).force("link", d3.forceLink(links).id(d => d.id).distance(function () {
-    			return height / Math.sqrt(nodes.length);
+    		let lengthUnit = height / 3 / Math.sqrt(nodes.length);
+
+    		simulation = d3.forceSimulation(nodes).force("link", d3.forceLink(links).id(d => d.id).distance(function (n) {
+    			return lengthUnit * n.value;
     		}).strength(1)).force("charge", d3.forceManyBody()).force("center", d3.forceCenter(width / 2, height / 2)).on("tick", simulationUpdate);
 
     		const g = svg.append("g");

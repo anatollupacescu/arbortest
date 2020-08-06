@@ -75,9 +75,14 @@
       .append("svg")
       .attr("width", width)
       .attr("height", height);
+
+    fetch("http://localhost:3000/data/")
+      .then(d => d.json())
+      .then(d => store.update(() => d));
   });
 
   function renderGraph(nodes, links) {
+    let lengthUnit = height / 3 / Math.sqrt(nodes.length);
     simulation = d3
       .forceSimulation(nodes)
       .force(
@@ -85,8 +90,8 @@
         d3
           .forceLink(links)
           .id((d) => d.id)
-          .distance(function () {
-            return height / Math.sqrt(nodes.length);
+          .distance(function (n) {
+            return lengthUnit * n.value
           })
           .strength(1)
       )
