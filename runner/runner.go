@@ -41,13 +41,17 @@ type Graph struct {
 	groups           groups
 	deps             map[string][]string
 	currentGroupName string
+	infoProvider     infoProvider
 }
+
+type infoProvider func() (string, string)
 
 // New exported.
 func New() *Graph {
 	return &Graph{
-		groups: make(groups, 0),
-		deps:   make(map[string][]string),
+		groups:       make(groups, 0),
+		deps:         make(map[string][]string),
+		infoProvider: gitCommitAndMessage,
 	}
 }
 
@@ -106,4 +110,9 @@ func (g *Graph) Append(t *T, name string, f func(t *T)) {
 // JSON exported.
 func (g Graph) JSON() string {
 	return marshal(g)
+}
+
+// CommitInfoProvider allows swapping for a different title and message provider.
+func (g *Graph) CommitInfoProvider(f infoProvider) {
+	g.infoProvider = f
 }

@@ -15,7 +15,10 @@ func TestSingleAppend(t *testing.T) {
 	r.Group("group")
 	r.Append(rt, "test", func(*runner.T) {})
 
-	json := `{"nodes":[
+	json := `{
+		"commit":"test",
+		"message":"test",
+		"nodes":[
 		{"id": "group", "status":"pass"},
 		{"id": "test",  "status":"pass"}
 	], 
@@ -26,6 +29,10 @@ func TestSingleAppend(t *testing.T) {
 	json = strings.ReplaceAll(json, "\t", "")
 	json = strings.ReplaceAll(json, "\n", "")
 	json = strings.ReplaceAll(json, " ", "")
+
+	r.CommitInfoProvider(func() (string, string) {
+		return "test", "test"
+	})
 	assert.Equal(t, json, r.JSON())
 }
 
@@ -36,7 +43,10 @@ func TestTwoAppend(t *testing.T) {
 	r.Append(rt, "test", func(*runner.T) {})
 	r.Append(rt, "test2", func(*runner.T) {})
 
-	json := `{"nodes":[
+	json := `{
+		"commit":"test",
+		"message":"test",
+		"nodes":[
 		{"id": "group", "status":"pass"},
 		{"id": "test",  "status":"pass"},
 		{"id": "test2",  "status":"pass"}
@@ -49,6 +59,10 @@ func TestTwoAppend(t *testing.T) {
 	json = strings.ReplaceAll(json, "\t", "")
 	json = strings.ReplaceAll(json, "\n", "")
 	json = strings.ReplaceAll(json, " ", "")
+
+	r.CommitInfoProvider(func() (string, string) {
+		return "test", "test"
+	})
 	assert.Equal(t, json, r.JSON())
 }
 
@@ -63,7 +77,10 @@ func TestTwoGrops(t *testing.T) {
 	r.Append(rt, "test3", func(*runner.T) {})
 	r.Append(rt, "test4", func(*runner.T) {})
 
-	json := `{"nodes":[
+	json := `{
+		"commit":"test",
+		"message":"test",
+		"nodes":[
 		{"id": "group", "status":"pass"},
 		{"id": "test1", "status":"pass"},
 		{"id": "test2", "status":"pass"},
@@ -81,6 +98,10 @@ func TestTwoGrops(t *testing.T) {
 	json = strings.ReplaceAll(json, "\t", "")
 	json = strings.ReplaceAll(json, "\n", "")
 	json = strings.ReplaceAll(json, " ", "")
+
+	r.CommitInfoProvider(func() (string, string) {
+		return "test", "test"
+	})
 	assert.Equal(t, json, r.JSON())
 }
 
@@ -96,7 +117,10 @@ func TestAfterCreatesLink(t *testing.T) {
 	r.Append(rt, "test", func(*runner.T) {})
 	r.Append(rt, "test2", func(*runner.T) {})
 
-	json := `{"nodes":[
+	json := `{
+		"commit":"test",
+		"message":"test",
+		"nodes":[
 		{"id":"group",	"status":"pass"},
 		{"id":"test",	"status":"pass"},
 		{"id":"test2",	"status":"pass"},
@@ -115,6 +139,10 @@ func TestAfterCreatesLink(t *testing.T) {
 	json = strings.ReplaceAll(json, "\t", "")
 	json = strings.ReplaceAll(json, "\n", "")
 	json = strings.ReplaceAll(json, " ", "")
+
+	r.CommitInfoProvider(func() (string, string) {
+		return "test", "test"
+	})
 	assert.Equal(t, json, r.JSON())
 }
 
@@ -134,7 +162,10 @@ func TestAfterFailedGroup(t *testing.T) {
 	r.Append(rt, "test", func(*runner.T) {})
 	r.Append(rt, "test2", func(*runner.T) {})
 
-	json := `{"nodes":[
+	json := `{
+		"commit":"test",
+		"message":"test",
+		"nodes":[
 		{"id":"group",	"status":"fail"},
 		{"id":"test",	"status":"pass"},
 		{"id":"test2",	"status":"fail"},
@@ -153,6 +184,10 @@ func TestAfterFailedGroup(t *testing.T) {
 	json = strings.ReplaceAll(json, "\t", "")
 	json = strings.ReplaceAll(json, "\n", "")
 	json = strings.ReplaceAll(json, " ", "")
+
+	r.CommitInfoProvider(func() (string, string) {
+		return "test", "test"
+	})
 	assert.Equal(t, json, r.JSON())
 }
 

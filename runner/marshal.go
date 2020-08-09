@@ -104,7 +104,7 @@ func marshal(g Graph) string {
 		}
 	}
 
-	commit, message := commitAndMessage()
+	commit, message := g.infoProvider()
 	out.Message = message
 	out.Commit = commit
 
@@ -116,7 +116,7 @@ func marshal(g Graph) string {
 	return string(data)
 }
 
-func commitAndMessage() (commit string, message string) {
+func gitCommitAndMessage() (commit string, message string) {
 	out, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
 	if err != nil {
 		return
