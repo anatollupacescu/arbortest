@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	packr "github.com/gobuffalo/packr/v2"
 )
 
 func init() {
@@ -72,9 +74,9 @@ func run() error {
 		b.messages <- graph
 	})
 
-	// box := packr.New("demo", "./public")
-	// dir := http.FileServer(box)
-	// http.Handle("/", dir)
+	box := packr.New("demo", "./web/public")
+	dir := http.FileServer(box)
+	http.Handle("/", dir)
 
 	portStr := fmt.Sprintf(":%d", *port)
 	log.Printf("listening on port %s", portStr)
