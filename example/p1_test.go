@@ -8,6 +8,6 @@ import (
 func testOne(t *runner.T) {
 }
 
-// group:z after:one,two
+// group:zorro after:one,two
 func testNotEmpty(t *runner.T) {
 }
