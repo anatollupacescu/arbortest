@@ -51,5 +51,5 @@ func Upload(data string) {
 		return
 	}
 
-	log.Println("test result uploaded")
+	log.Println("upload test results: success")
 }
