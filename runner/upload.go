@@ -39,7 +39,7 @@ func Upload(data string) {
 
 	r, err := hc.Do(req)
 	if err != nil {
-		log.Fatalf("execute upload: %s", err)
+		log.Fatalf("upload test results: %s", err)
 	}
 
 	defer func() {
@@ -47,7 +47,7 @@ func Upload(data string) {
 	}()
 
 	if r.StatusCode != http.StatusOK {
-		log.Fatalf("bad response status: %s", r.Status)
+		log.Fatalf("upload test results: bad response status: %s", r.Status)
 		return
 	}
 
