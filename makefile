@@ -29,3 +29,8 @@ $(ARBOR_GEN):
 .PHONY: install-gen
 
 install-gen: $(ARBOR_GEN)
+
+.PHONY: test
+
+test: 
+	go test -v -count=1 ./...
