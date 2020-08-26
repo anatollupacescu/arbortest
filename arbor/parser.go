@@ -9,7 +9,7 @@ import (
 )
 
 type testBundle struct {
-	comment, testName string
+	comment, testTitle, testName string
 }
 
 func parse(src string) []testBundle {
@@ -25,16 +25,18 @@ func parse(src string) []testBundle {
 
 	for _, decl := range f.Decls {
 		if gen, ok := decl.(*ast.FuncDecl); ok && hasTestSignature(gen) {
-			testName := gen.Name.Name
-
 			comment := getComment(gen)
 			if comment == "" {
 				continue
 			}
 
+			testName := gen.Name.Name
+			testTitle := strings.TrimPrefix(testName, "test")
+
 			bundles = append(bundles, testBundle{
-				comment:  comment,
-				testName: testName,
+				comment:   comment,
+				testTitle: testTitle,
+				testName:  testName,
 			})
 		}
 	}

@@ -23,7 +23,7 @@ func TestArbor(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group({{ printf "%q" $elem }}){{ $testGroup := (index $groups $elem)}}{{ $len := (len $testGroup.Deps) }}{{ if (gt $len 0) }}
 		g.After(at, {{ $testGroup.Deps | commaSep }}){{end}}{{ range $test := $testGroup.Tests}}
-		g.Append(at, {{ printf "%q" $test }}, {{ $test }}){{ end }}
+		g.Append(at, {{ printf "%q" $test.Title }}, {{ $test.Name }}){{ end }}
 	})
 {{ end }}
 	output := g.JSON()

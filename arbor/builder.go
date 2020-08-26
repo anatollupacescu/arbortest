@@ -43,7 +43,7 @@ func populate(g graph, bundles []testBundle) (err error) {
 	for i := range bundles {
 		input := bundles[i]
 		if err = applyBundle(g, input); err != nil {
-			err = fmt.Errorf("%w in\n%s", err, input)
+			err = fmt.Errorf("%w near '%s':\n%s", err, input.testName, input.comment)
 			return
 		}
 	}
@@ -98,7 +98,12 @@ func applyBundle(g graph, bundle testBundle) error {
 		return errMissingGroupDeclaration
 	}
 
-	if err := g.addGroup(groupID, dependencies, bundle.testName); err != nil {
+	testDesc := testDescriptor{
+		Name:  bundle.testName,
+		Title: bundle.testTitle,
+	}
+
+	if err := g.addGroup(groupID, dependencies, testDesc); err != nil {
 		return err
 	}
 

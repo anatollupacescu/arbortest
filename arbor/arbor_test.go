@@ -93,7 +93,7 @@ func TestArbor(t *testing.T) {
 	t.Run("one", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("one")
-		g.Append(at, "testOne", testOne)
+		g.Append(at, "One", testOne)
 	})
 
 	output := g.JSON()
@@ -146,8 +146,8 @@ func TestArbor(t *testing.T) {
 	t.Run("one", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("one")
-		g.Append(at, "testOne", testOne)
-		g.Append(at, "testTwo", testTwo)
+		g.Append(at, "One", testOne)
+		g.Append(at, "Two", testTwo)
 	})
 
 	output := g.JSON()
@@ -200,13 +200,13 @@ func TestArbor(t *testing.T) {
 	t.Run("one", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("one")
-		g.Append(at, "testOne", testOne)
+		g.Append(at, "One", testOne)
 	})
 
 	t.Run("two", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("two")
-		g.Append(at, "testTwo", testTwo)
+		g.Append(at, "Two", testTwo)
 	})
 
 	output := g.JSON()
@@ -259,14 +259,14 @@ func TestArbor(t *testing.T) {
 	t.Run("z", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("z")
-		g.Append(at, "testNotEmpty", testNotEmpty)
+		g.Append(at, "NotEmpty", testNotEmpty)
 	})
 
 	t.Run("one", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("one")
 		g.After(at, "z")
-		g.Append(at, "testOne", testOne)
+		g.Append(at, "One", testOne)
 	})
 
 	output := g.JSON()
@@ -322,20 +322,20 @@ func TestArbor(t *testing.T) {
 	t.Run("two", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("two")
-		g.Append(at, "testTwo", testTwo)
+		g.Append(at, "Two", testTwo)
 	})
 
 	t.Run("z", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("z")
-		g.Append(at, "testNotEmpty", testNotEmpty)
+		g.Append(at, "NotEmpty", testNotEmpty)
 	})
 
 	t.Run("one", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("one")
 		g.After(at, "z")
-		g.Append(at, "testOne", testOne)
+		g.Append(at, "One", testOne)
 	})
 
 	output := g.JSON()
@@ -391,21 +391,21 @@ func TestArbor(t *testing.T) {
 	t.Run("z", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("z")
-		g.Append(at, "testNotEmpty", testNotEmpty)
+		g.Append(at, "NotEmpty", testNotEmpty)
 	})
 
 	t.Run("one", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("one")
 		g.After(at, "z")
-		g.Append(at, "testOne", testOne)
+		g.Append(at, "One", testOne)
 	})
 
 	t.Run("two", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("two")
 		g.After(at, "one")
-		g.Append(at, "testTwo", testTwo)
+		g.Append(at, "Two", testTwo)
 	})
 
 	output := g.JSON()
@@ -471,15 +471,15 @@ func TestArbor(t *testing.T) {
 	t.Run("two", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("two")
-		g.Append(at, "testTwo", testTwo)
+		g.Append(at, "Two", testTwo)
 	})
 
 	t.Run("one", func(t *testing.T) {
 		at := arbor.NewT(t)
 		g.Group("one")
 		g.After(at, "two")
-		g.Append(at, "testOne", testOne)
-		g.Append(at, "testThree", testThree)
+		g.Append(at, "One", testOne)
+		g.Append(at, "Three", testThree)
 	})
 
 	output := g.JSON()

@@ -6,9 +6,13 @@ import (
 	"fmt"
 )
 
+type testDescriptor struct {
+	Name, Title string
+}
+
 type testGroup struct {
 	Deps  []string
-	Tests []string
+	Tests []testDescriptor
 }
 
 type graph struct {
@@ -18,7 +22,7 @@ type graph struct {
 
 var errRepeatedDeclaration = errors.New("repeated declaration of 'after' for current group")
 
-func (g graph) addGroup(id string, deps []string, testName string) error {
+func (g graph) addGroup(id string, deps []string, testName testDescriptor) error {
 	group := g.groups[id]
 
 	if len(group.Deps) > 0 && len(deps) > 0 {
