@@ -209,3 +209,7 @@ func (f *fakeT) Errorf(format string, args ...interface{}) {
 
 func (f *fakeT) Log(args ...interface{}) {
 }
+
+func (f *fakeT) Run(_ string, _ func(t *testing.T)) bool {
+	return true
+}

@@ -44,8 +44,14 @@
 
   source.onmessage = function (e) {
     graph = JSON.parse(e.data);
-		store.update(graphs => [ graph, ...graphs])
-    
+		store.update(graphs => {
+      if (graphs.length >= 10) {
+        graphs.pop()
+      }
+      
+      return [ graph, ...graphs]
+    })
+
     d3.selectAll("svg > *").remove();
     let links = graph.links.map((d) => Object.create(d));
     let nodes = graph.nodes.map((d) => Object.create(d));

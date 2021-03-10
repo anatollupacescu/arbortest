@@ -147,3 +147,7 @@ func (f *fakeT) Errorf(format string, args ...interface{}) {
 
 func (f *fakeT) Log(args ...interface{}) {
 }
+
+func (f *fakeT) Run(name string, tf func(t *testing.T)) bool {
+	return true
+}

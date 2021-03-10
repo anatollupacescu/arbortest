@@ -1,11 +1,14 @@
 package runner
 
+import "testing"
+
 // Testable exported.
 type Testable interface {
 	Failed() bool
-	Error(args ...interface{})
-	Errorf(format string, args ...interface{})
-	Log(args ...interface{})
+	Error(...interface{})
+	Errorf(string, ...interface{})
+	Log(...interface{})
+	Run(string, func(t *testing.T)) bool
 }
 
 // T exported.
@@ -36,4 +39,10 @@ func (a *T) Errorf(format string, args ...interface{}) {
 // Log exported.
 func (a *T) Log(args ...interface{}) {
 	a.proxy.Log(args...)
+}
+
+// Run exported.
+func (a *T) Run(name string, f func(t *testing.T)) bool {
+	f(nil)
+	return true
 }
